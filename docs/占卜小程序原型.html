@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>占卜微信小程序 · 原型设计图 v5</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --paper:#ffffff; --ink:#15171c; --ink2:#71767f;
+    --line:#dcdfe4; --line2:#eceef1; --accent:#e0402f; --accent-tint:#fdeeeb;
+    --serif:"Songti SC","STSong","Noto Serif SC",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{background:var(--bg);color:var(--ink);padding:28px 12px 64px;}
+  h1{text-align:center;font-size:21px;letter-spacing:3px;margin-bottom:6px;
+     font-family:var(--serif);font-weight:700;}
+  .sub{text-align:center;color:var(--ink2);font-size:12.5px;margin-bottom:18px;letter-spacing:.5px;}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px;}
+  .tab{padding:7px 15px;border:1px solid var(--line);background:var(--paper);
+       border-radius:999px;font-size:13px;cursor:pointer;color:var(--ink2);transition:all .15s;}
+  .tab:hover{border-color:var(--ink);color:var(--ink);}
+  .tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .stepchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;}
+  .sc{padding:4px 10px;border:1px solid var(--line);background:#fff;border-radius:999px;
+      font-size:11px;color:var(--ink2);cursor:pointer;transition:all .15s;}
+  .sc:hover{border-color:var(--ink);color:var(--ink);}
+  .sc.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .stagewrap{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start;}
+
+  /* ===== phone ===== */
+  .phone{width:366px;background:var(--paper);border:11px solid var(--ink);border-radius:38px;
+         box-shadow:0 18px 44px rgba(21,23,28,.25),0 2px 0 rgba(21,23,28,.4);overflow:hidden;position:relative;}
+  .statusbar{height:27px;background:var(--ink);color:#fff;display:flex;align-items:center;
+             justify-content:space-between;padding:0 15px;font-size:11px;letter-spacing:.5px;}
+  .notch{width:86px;height:16px;background:var(--ink);border-radius:0 0 12px 12px;
+         position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:5;}
+  .screen{height:648px;overflow-y:auto;padding:16px 16px 22px;background:var(--paper);}
+  .screen::-webkit-scrollbar{width:0;}
+
+  /* ===== typography ===== */
+  .ttl{font-size:19px;text-align:center;letter-spacing:4px;margin:4px 0 2px;
+       font-family:var(--serif);font-weight:700;}
+  .ttl-sub{text-align:center;font-size:11px;color:var(--ink2);margin-bottom:14px;letter-spacing:1px;}
+  .sec-ttl{font-size:17px;text-align:center;letter-spacing:3px;margin:2px 0 4px;
+           font-family:var(--serif);font-weight:700;}
+  .rule{width:36px;height:3px;background:var(--accent);margin:6px auto 10px;border-radius:2px;}
+  .hint{font-size:11.5px;color:var(--ink2);line-height:1.75;margin:6px 0;text-align:center;}
+  .img-note{font-size:10.5px;color:#a2a6ad;text-align:center;margin:8px 0 0;line-height:1.6;}
+
+  /* ===== 演卦页头部 ===== */
+  .dhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
+  .dh-title{font-family:var(--serif);font-size:15px;letter-spacing:3px;font-weight:700;}
+  .dh-meta{font-size:10px;color:var(--ink2);letter-spacing:1px;}
+  .dh-meta b{color:var(--accent);font-weight:600;}
+
+  /* ===== 六爻记录带 ===== */
+  .record{display:flex;gap:4px;margin-bottom:10px;}
+  .rec{flex:1;border:1px solid var(--line2);border-radius:8px;padding:4px 0 5px;
+       text-align:center;background:#fff;transition:all .18s;}
+  .rec .k{font-size:8.5px;color:#b6bac1;letter-spacing:1px;line-height:1;}
+  .rec .v{font-size:11px;color:#c9ccd2;margin-top:3px;height:15px;line-height:15px;
+          display:flex;align-items:center;justify-content:center;gap:3px;}
+  .rec.has{border-color:var(--line);}
+  .rec.has .k{color:var(--ink2);}
+  .rec.has .v{color:var(--ink);font-weight:700;}
+  .rec.cur{border-color:var(--accent);background:var(--accent-tint);
+           box-shadow:0 0 0 2px rgba(224,64,47,.08);}
+  .rec.cur .k{color:var(--accent);}
+  .rec.cur .v{color:var(--accent);}
+  .rec.bian{position:relative;}
+  .rec.bian::after{content:'变';position:absolute;right:3px;top:2px;font-size:7px;
+                   color:var(--accent);letter-spacing:0;}
+
+  /* ===== 挂一常驻栏 ===== */
+  .hangslot{display:flex;align-items:center;justify-content:center;gap:8px;
+            height:32px;margin-bottom:10px;border:1px solid var(--line2);
+            border-radius:9px;background:#fafbfc;transition:all .2s;}
+  .hs-ball{width:10px;height:10px;border-radius:50%;background:var(--ink);
+           box-shadow:0 1px 3px rgba(21,23,28,.4);opacity:0;transition:opacity .25s;}
+  .hangslot.on .hs-ball{opacity:1;}
+  .hs-t{font-size:10px;color:var(--ink);letter-spacing:1px;}
+  .hs-s{font-size:9px;color:#a8adb5;letter-spacing:.5px;}
+
+  /* ===== 主体 ===== */
+  .dbody{display:flex;gap:6px;justify-content:center;align-items:flex-start;}
+  .cwrap{position:relative;width:224px;height:224px;flex:0 0 224px;touch-action:none;
+         user-select:none;-webkit-user-select:none;}
+  .circl{position:absolute;inset:0;border:1px solid var(--line);border-radius:50%;
+         background:#fff;overflow:hidden;box-shadow:inset 0 1px 5px rgba(21,23,28,.05);}
+  .dsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;}
+  .ballfield{position:absolute;inset:0;z-index:2;}
+  .boxfield{position:absolute;inset:0;z-index:1;}
+
+  .ball{position:absolute;border-radius:50%;background:#fff;border:1.3px solid var(--ink);
+        box-shadow:0 1px 1.5px rgba(21,23,28,.16);
+        transition:left .5s cubic-bezier(.22,.85,.3,1),top .5s cubic-bezier(.22,.85,.3,1),
+                   background .25s,box-shadow .25s,transform .35s ease,opacity .3s;}
+  .ball.dark{background:var(--ink);border-color:var(--ink);box-shadow:0 1.5px 4px rgba(21,23,28,.45);}
+  .ball.gone{opacity:0;transform:scale(.4);}
+
+  /* 四策一组：手绘圈（SVG path 直接画，见 drawLoops） */
+  .f-eq .fl{font-size:8.5px;opacity:.55;margin:0 2px 0 1px;letter-spacing:0;}
+
+  .dtag{position:absolute;z-index:4;padding:1px 7px;border-radius:999px;font-size:9px;
+        letter-spacing:.5px;background:#fff;border:1px solid var(--line);color:var(--ink2);
+        opacity:0;transition:opacity .2s;pointer-events:none;}
+  .dtag.on{opacity:1;}
+  #tagL{left:6px;top:10px;}
+  #tagR{right:6px;top:10px;}
+  .dtag b{color:var(--ink);}
+
+  /* 三变柱 */
+  .pillars{display:flex;gap:4px;width:80px;flex:0 0 80px;padding-top:36px;}
+  .pil{flex:1;display:flex;flex-direction:column;align-items:center;}
+  .pil-lab{font-size:8px;color:#b6bac1;margin-bottom:3px;white-space:nowrap;}
+  .pil-num{font-size:12px;font-weight:700;line-height:1;margin-bottom:4px;font-family:var(--serif);}
+  .pil-dots{width:100%;height:112px;border:1px solid var(--line2);border-radius:7px;background:#fafbfc;
+            display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+            padding:5px 0;gap:0;}
+  .dseg{display:flex;flex-direction:column;align-items:center;gap:1.5px;}
+  .dgap{height:7px;flex:0 0 7px;}
+  .bdot{width:7px;height:7px;border-radius:50%;background:var(--ink);flex:0 0 7px;
+        box-shadow:0 1px 1.5px rgba(21,23,28,.3);animation:dotin .22s both;}
+  .bdot.wait{display:none;}
+  @keyframes dotin{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:scale(1);}}
+  .pil-sub{font-size:7px;color:#b6bac1;margin-top:3px;letter-spacing:-.2px;white-space:nowrap;}
+
+  /* 飞行的黑球 */
+  .flyball{position:fixed;border-radius:50%;background:var(--ink);z-index:999;
+           pointer-events:none;box-shadow:0 3px 10px rgba(21,23,28,.4);
+           transition:transform .62s cubic-bezier(.45,.05,.25,1),opacity .3s;}
+
+  /* ===== 下方步骤轨 ===== */
+  .steps{display:flex;align-items:center;margin:12px 2px 0;}
+  .stp{width:23px;height:23px;flex:0 0 23px;border-radius:50%;border:1px solid var(--line);
+       background:#fff;display:flex;align-items:center;justify-content:center;
+       font-size:9px;color:#c3c7cd;font-weight:600;transition:all .18s;}
+  .stp.done{background:#fff;border-color:var(--ink);color:var(--ink);}
+  .stp.cur{background:var(--ink);border-color:var(--ink);color:#fff;
+           box-shadow:0 3px 8px rgba(21,23,28,.3);transform:scale(1.06);}
+  .stp-line{flex:1;height:1px;background:var(--line2);margin:0 2px;}
+  .stp-line.done{background:var(--ink);}
+  .stpname{text-align:center;font-size:11px;color:var(--ink2);letter-spacing:1px;margin-top:8px;}
+  .stpname b{color:var(--ink);font-weight:600;}
+
+  /* ===== 底部 ===== */
+  .dbot{margin-top:9px;}
+  .dhint{font-size:11px;color:var(--ink2);line-height:1.7;text-align:center;margin-top:7px;min-height:34px;}
+  .dhint b{color:var(--ink);}
+  .chips{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;min-height:20px;}
+  .chip{display:inline-block;background:#fff;color:var(--ink);border:1px solid var(--line);
+        border-radius:999px;padding:2px 9px;font-size:10.5px;}
+  .chip.black{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .chip.sum{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+
+  .formula{background:var(--ink);color:#fff;border-radius:10px;padding:8px 6px;
+           margin-top:8px;text-align:center;}
+  .f-cap{font-size:9px;opacity:.55;letter-spacing:3px;margin-bottom:3px;}
+  .f-eq{font-size:12px;letter-spacing:.3px;white-space:nowrap;}
+  .f-eq b{color:#ff9c8d;font-weight:700;}
+
+  /* buttons */
+  .btn{display:block;width:100%;padding:12px;border:none;border-radius:11px;
+       background:var(--accent);color:#fff;font-size:14px;letter-spacing:4px;cursor:pointer;
+       margin-top:10px;box-shadow:0 4px 12px rgba(224,64,47,.26);font-weight:600;
+       transition:all .18s;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink);
+             box-shadow:none;font-weight:400;}
+  .btn:active{transform:scale(.985);}
+  .btn.wait{background:#f0f1f3;color:#a8adb5;box-shadow:none;cursor:not-allowed;}
+  .lnk{display:block;text-align:center;font-size:10.5px;color:var(--ink2);
+       text-decoration:underline;text-underline-offset:3px;margin-top:6px;cursor:pointer;}
+
+  .card{border:1px solid var(--line2);border-radius:14px;padding:13px;background:#fff;
+        margin:10px 0;box-shadow:0 1px 3px rgba(21,23,28,.04);}
+
+  /* 起卦页插画 */
+  .illu{position:relative;width:100%;padding-top:46px;margin:4px 0 2px;}
+  .fly{position:absolute;top:2px;left:50%;transform:translateX(-50%);
+       width:15px;height:15px;border-radius:50%;background:var(--ink);
+       box-shadow:0 2px 5px rgba(21,23,28,.35);z-index:2;}
+  .flyarrow{position:absolute;top:20px;left:50%;transform:translateX(-50%);
+            height:24px;border-left:1.5px dashed var(--ink);}
+  .field{position:relative;width:100%;height:120px;background:#fff;
+         border:1px solid var(--line);border-radius:14px;overflow:hidden;
+         box-shadow:inset 0 1px 4px rgba(21,23,28,.05);}
+  .illu-cap{font-size:10px;color:var(--ink2);text-align:center;margin-top:7px;letter-spacing:.5px;}
+  .ritual{font-size:14px;color:var(--ink);line-height:2.1;text-align:center;letter-spacing:1px;}
+  .ritual b{color:var(--accent);font-size:17px;letter-spacing:3px;
+            font-family:var(--serif);font-weight:700;}
+
+  /* 卦象 */
+  .hex{display:flex;flex-direction:column;align-items:center;gap:7px;margin:12px 0 6px;}
+  .hex-yao{display:flex;align-items:center;gap:10px;}
+  .hex-yao .lab{width:26px;font-size:12px;color:var(--ink2);text-align:right;font-family:var(--serif);}
+  .line{display:flex;gap:5px;}
+  .seg{width:36px;height:9px;background:var(--ink);border-radius:2px;}
+  .seg.break{background:transparent;gap:5px;}
+  .seg.break::before,.seg.break::after{content:"";width:15px;height:9px;background:var(--ink);
+        border-radius:2px;display:inline-block;}
+  .hex-yao .v{width:42px;font-size:12px;color:var(--ink);}
+  .hex-head{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;}
+  .hex-name{font-size:21px;font-weight:700;letter-spacing:3px;font-family:var(--serif);}
+  .seal{width:34px;height:34px;background:var(--accent);border-radius:7px;color:#fff;
+        font-family:var(--serif);font-size:13px;display:flex;align-items:center;
+        justify-content:center;letter-spacing:1px;box-shadow:0 2px 6px rgba(224,64,47,.35);}
+  .hex-tuan{font-size:13px;color:var(--ink2);text-align:center;margin-top:6px;letter-spacing:1px;}
+
+  /* 流程 */
+  .flow{font-size:12px;}
+  .fnode{border:1.3px solid var(--ink);border-radius:9px;padding:7px 6px;background:#fff;
+         margin:5px 0;text-align:center;letter-spacing:.5px;font-size:11px;}
+  .fnode.red{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+  .fnode.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .farrow{text-align:center;color:#c3c7cd;font-size:10px;line-height:1.3;}
+
+  /* 爻画（CSS 绘制，避免字体缺字） */
+  .yao-line{position:relative;display:block;width:26px;height:6px;}
+  .yao-line.yang{background:var(--ink);border-radius:1px;}
+  .yao-line.yin{background:transparent;}
+  .yao-line.yin::before,.yao-line.yin::after{content:"";position:absolute;top:0;
+    width:10px;height:6px;background:var(--ink);border-radius:1px;}
+  .yao-line.yin::before{left:0;}
+  .yao-line.yin::after{right:0;}
+  .yao-line.mini{width:15px;height:4px;display:inline-block;}
+  .yao-line.mini.yin::before,.yao-line.mini.yin::after{width:6px;height:4px;}
+
+  /* 成爻：圆席里的算式 */
+  .yao-calc{position:absolute;inset:0;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:3px;}
+  .yc-cap{font-size:9px;color:var(--ink2);letter-spacing:2px;}
+  .yc-eq{font-size:11.5px;color:var(--ink2);letter-spacing:1px;}
+  .yc-num{font-family:var(--serif);font-size:64px;font-weight:700;line-height:1;letter-spacing:1px;}
+  .yc-sym{height:12px;display:flex;align-items:center;justify-content:center;}
+  .yc-sym .yao-line{width:46px;height:8px;}
+  .yc-sym .yao-line.yin::before,.yc-sym .yao-line.yin::after{width:18px;height:8px;}
+
+  .caption{width:360px;font-size:12px;color:var(--ink2);line-height:1.8;
+           background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .caption b{color:var(--ink);}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+  <h1>占卜微信小程序 · 原型设计图</h1>
+  <div class="sub">大衍筮法 ｜ 挂一常驻 · 四策一圈 · 余策变黑归柱 · 一变毕则洗牌重分</div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-s="s1">① 起卦页</div>
+    <div class="tab" data-s="sd">② 演卦 · 一爻八步</div>
+    <div class="tab" data-s="s6">③ 卦象结果</div>
+    <div class="tab" data-s="s7">④ 流程与状态机</div>
+  </div>
+
+  <div class="stepchips" id="stepchips">
+    <span class="sc on" data-d="0">S1 挂一</span>
+    <span class="sc" data-d="1">S2 分二挂一</span>
+    <span class="sc" data-d="2">S3 揲四归奇</span>
+    <span class="sc" data-d="3">S4 分二挂一</span>
+    <span class="sc" data-d="4">S5 揲四归奇</span>
+    <span class="sc" data-d="5">S6 分二挂一</span>
+    <span class="sc" data-d="6">S7 揲四归奇</span>
+    <span class="sc" data-d="7">S8 成爻</span>
+  </div>
+
+  <div class="stagewrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span></span><span>●● 5G</span></div>
+      <div class="screen" id="screen">
+
+        <!-- ① 起卦 -->
+        <div id="s1" class="scr">
+          <div class="ttl">大衍占筮</div>
+          <div class="ttl-sub">五十策分合 · 十八变而成卦</div>
+
+          <div class="illu">
+            <div class="fly"></div><div class="flyarrow"></div>
+            <div class="field" id="field1"></div>
+            <div class="illu-cap">大衍之数五十，其用四十有九 · 拈出一枚不用</div>
+          </div>
+
+          <div class="card ritual">
+            请闭目凝神<br/>
+            <b>心念所问之事</b><br/>
+            而后起卦
+          </div>
+          <div class="hint">分二由你亲手划线，挂一由程序代行<br/>一爻八步，每步须你亲自推进</div>
+          <button class="btn" onclick="go('sd',0)">开 始 起 卦</button>
+          <button class="btn ghost">查 看 历 史</button>
+        </div>
+
+        <!-- ② 演卦 · 八步 -->
+        <div id="sd" class="scr hidden">
+          <div class="dhead">
+            <span class="dh-title">大衍占筮</span>
+            <span class="dh-meta" id="dmeta">初爻 · 起筮</span>
+          </div>
+
+          <div class="record" id="record"></div>
+
+          <!-- 挂一常驻栏：当爻三变期间一直在上方 -->
+          <div class="hangslot" id="hangslot">
+            <i class="hs-ball" id="hsBall"></i>
+            <span class="hs-t">挂一 · 太极之策</span>
+            <span class="hs-s">五十取一，虚而不用</span>
+          </div>
+
+          <div class="dbody">
+            <div class="cwrap" id="cwrap">
+              <div class="circl" id="circl">
+                <div class="boxfield" id="boxes"></div>
+                <div class="ballfield" id="ballfield"></div>
+              </div>
+              <svg class="dsvg" id="dsvg" viewBox="0 0 224 224"></svg>
+              <div class="dtag" id="tagL"></div>
+              <div class="dtag" id="tagR"></div>
+            </div>
+            <div class="pillars" id="pillars"></div>
+          </div>
+
+          <div class="steps" id="steps"></div>
+          <div class="stpname" id="stpname"></div>
+
+          <div class="dbot">
+            <div class="chips" id="dchips"></div>
+            <div class="formula" id="dformula"></div>
+            <div class="dhint" id="dhint"></div>
+            <button class="btn" id="dbtn"></button>
+            <span class="lnk" id="dlnk" style="display:none"></span>
+          </div>
+        </div>
+
+        <!-- ③ 卦象 -->
+        <div id="s6" class="scr hidden">
+          <div class="dhead">
+            <span class="dh-title">卦象生成</span>
+            <span class="dh-meta">六爻齐备 · 初→上</span>
+          </div>
+          <div class="hex">
+            <div class="hex-yao"><span class="lab">上</span><div class="line"><span class="seg break"></span></div><span class="v">八</span></div>
+            <div class="hex-yao"><span class="lab">五</span><div class="line"><span class="seg break"></span></div><span class="v">八</span></div>
+            <div class="hex-yao"><span class="lab">四</span><div class="line"><span class="seg break"></span></div><span class="v">八</span></div>
+            <div class="hex-yao"><span class="lab">三</span><div class="line"><span class="seg"></span></div><span class="v">七</span></div>
+            <div class="hex-yao"><span class="lab">二</span><div class="line"><span class="seg break"></span></div><span class="v">八</span></div>
+            <div class="hex-yao"><span class="lab">初</span><div class="line"><span class="seg"></span></div><span class="v">七</span></div>
+          </div>
+          <div class="hex-head">
+            <div class="seal">明夷</div>
+            <div class="hex-name">地火明夷</div>
+          </div>
+          <div class="hex-tuan">卦辞：利艰贞。</div>
+          <div class="img-note">六爻皆七、八（无九、六），之卦＝本卦，依卦辞占<br/>示例取自《占卜玄机》明夷例</div>
+          <button class="btn">保 存 占 例</button>
+          <button class="btn ghost" onclick="go('s1')">重 新 起 卦</button>
+        </div>
+
+        <!-- ④ 流程 -->
+        <div id="s7" class="scr hidden flow">
+          <div class="sec-ttl">一爻八步</div>
+          <div class="rule"></div>
+          <div class="fnode dark">S1 挂一 · 五十取一，虚而不用（此后常驻上方）</div>
+          <div class="farrow">点「下一步」▼</div>
+          <div class="fnode">S2 分二挂一 · 变一（49 策）</div>
+          <div class="farrow">▼</div>
+          <div class="fnode">S3 揲四归奇 · 四策一圈，余策变黑归右柱</div>
+          <div class="farrow">▼ 余策洗牌重分</div>
+          <div class="fnode">S4 分二挂一 · 变二（44 策）</div>
+          <div class="farrow">▼</div>
+          <div class="fnode">S5 揲四归奇 · 变二</div>
+          <div class="farrow">▼ 余策洗牌重分</div>
+          <div class="fnode">S6 分二挂一 · 变三（36 策）</div>
+          <div class="farrow">▼</div>
+          <div class="fnode">S7 揲四归奇 · 变三</div>
+          <div class="farrow">▼</div>
+          <div class="fnode red">S8 成爻 · 余策 ÷ 4 ＝ 7 少阳 ⚊</div>
+          <div class="farrow">▼ 记入上方六爻带，循环 6 次</div>
+          <div class="fnode dark">六爻齐 → 自动生成卦象（本卦 ＋ 之卦）</div>
+
+          <div class="sec-ttl" style="margin-top:18px">状态机</div>
+          <div class="rule"></div>
+          <div class="fnode" style="letter-spacing:0;font-size:10px;line-height:1.7">
+            HANG → SPLIT → COUNT → SPLIT → COUNT →<br/>SPLIT → COUNT → YAO_DONE
+          </div>
+          <div class="hint">每步 <b>step</b> 只由用户点「下一步」推进，无自动跳转；<br/>分二挂一须先划线分堆才可继续。</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="caption" id="cap"></div>
+  </div>
+
+<script>
+/* =========================================================
+   参数
+   ========================================================= */
+var W = 224, H = 224;
+var YAO = ['初','二','三','四','五','上'];
+
+var STEPS = [
+  { k:'hang',  lab:'挂一',     i:1, full:'挂一 · 虚一不用' },
+  { k:'split', lab:'分二挂一', i:2, b:0, full:'分二挂一 · 第一变' },
+  { k:'count', lab:'揲四归奇', i:3, b:0, full:'揲四归奇 · 第一变' },
+  { k:'split', lab:'分二挂一', i:4, b:1, full:'分二挂一 · 第二变' },
+  { k:'count', lab:'揲四归奇', i:5, b:1, full:'揲四归奇 · 第二变' },
+  { k:'split', lab:'分二挂一', i:6, b:2, full:'分二挂一 · 第三变' },
+  { k:'count', lab:'揲四归奇', i:7, b:2, full:'揲四归奇 · 第三变' },
+  { k:'yao',   lab:'成爻',     i:8, full:'成爻 · 三变既毕' }
+];
+
+var S = { step: 0, prev: -1 };
+
+var DATA   = [];    // 每变：{ stroke, sides, L, Rafter, hangIdx, r1(右余), r2(左余), next, done }
+var SPOTS  = {};    // 按策数缓存的散乱落点
+var pool   = [];    // 球元素池（复用，才能做位移动画）
+var timers = [];
+
+function el(id){ return document.getElementById(id); }
+function clear(node){ while (node.firstChild) node.removeChild(node.firstChild); }
+var NS = 'http://www.w3.org/2000/svg';
+
+function later(ms, fn){ timers.push(setTimeout(fn, ms)); }
+function clearTimers(){ for (var i=0;i<timers.length;i++) clearTimeout(timers[i]); timers = []; }
+
+/* =========================================================
+   散乱落点（最小间距 + 碰撞检测）
+   ========================================================= */
+function genSpots(n, sz, gap, w, h){
+  w = w || W; h = h || H;
+  var cx = w/2, cy = h/2;
+  var Rmax = Math.min(cx, cy) - 8 - sz/2;
+  var pts = [];
+  for (var pass = 0; pass < 6; pass++){
+    var D = sz + gap * (1 - pass * 0.15);
+    pts = [];
+    var tries = 0, limit = n * 3000;
+    while (pts.length < n && tries < limit){
+      tries++;
+      var a  = Math.random() * Math.PI * 2;
+      var rr = Math.sqrt(Math.random()) * Rmax;
+      var bx = cx + Math.cos(a) * rr;
+      var by = cy + Math.sin(a) * rr;
+      var ok = true;
+      for (var i = 0; i < pts.length; i++){
+        var dx = pts[i].x - bx, dy = pts[i].y - by;
+        if (dx*dx + dy*dy < D*D){ ok = false; break; }
+      }
+      if (ok) pts.push({ x: bx, y: by });
+    }
+    if (pts.length >= n) break;
+  }
+  return pts;
+}
+
+function spotsFor(n){
+  if (!SPOTS[n]){
+    var sz = n >= 46 ? 12 : (n >= 40 ? 13 : 14);
+    SPOTS[n] = { sz: sz, pts: genSpots(n, sz, n >= 46 ? 4.5 : 5) };
+  }
+  return SPOTS[n];
+}
+
+function totalOf(b){
+  if (b === 0) return 49;
+  return DATA[b-1] ? DATA[b-1].next : 44;
+}
+
+/* =========================================================
+   划线分堆
+   ========================================================= */
+function boundaryX(pts, y){
+  var best = 1e9, bx = pts[0].x;
+  for (var i = 0; i < pts.length - 1; i++){
+    var a = pts[i], c = pts[i+1];
+    var y0 = Math.min(a.y, c.y), y1 = Math.max(a.y, c.y);
+    var yy = Math.max(y0, Math.min(y1, y));
+    var t  = (y1 === y0) ? 0 : (yy - y0) / (y1 - y0);
+    var x  = a.x + (c.x - a.x) * t;
+    var d  = Math.abs(y - yy);
+    if (d < best){ best = d; bx = x; }
+  }
+  return bx;
+}
+
+function computeSplit(b, pts, spots){
+  var L = 0, R = 0, hangIdx = -1, topY = 1e9, sides = [];
+  for (var i = 0; i < spots.length; i++){
+    var s = spots[i].x < boundaryX(pts, spots[i].y) ? 'L' : 'R';
+    sides.push(s);
+    if (s === 'L') L++;
+    else { R++; if (spots[i].y < topY){ topY = spots[i].y; hangIdx = i; } }
+  }
+  var Rafter = Math.max(1, R - 1);
+  var r1 = Rafter % 4 || 4;   // 右余：先揲右堆（已挂其一），整除记四
+  var r2 = L % 4 || 4;        // 左余：再揲左堆，此步不再挂一
+  return {
+    L: L, Rafter: Rafter, r1: r1, r2: r2,
+    next: L + Rafter - r1 - r2, hangIdx: hangIdx, sides: sides, done: false
+  };
+}
+
+function demoStroke(b){
+  var amp = [11, -9, 7][b] || 8, ph = [0, .7, 1.3][b] || 0, pts = [], n = 30;
+  for (var i = 0; i <= n; i++){
+    var t = i / n;
+    var y = 12 + t * (H - 24);
+    var x = W/2 + Math.sin(t * Math.PI * 2 + ph) * amp + (t - .5) * 16
+          + Math.sin(t * 17 + b * 3) * 1.2;
+    pts.push({ x: x, y: y });
+  }
+  return pts;
+}
+
+function ensureData(b){
+  for (var i = 0; i <= b; i++){
+    if (!DATA[i]){
+      var st = demoStroke(i);
+      DATA[i] = computeSplit(i, st, spotsFor(totalOf(i)).pts);
+      DATA[i].stroke = st;
+    }
+  }
+}
+
+/* =========================================================
+   球池
+   ========================================================= */
+function poolTo(n){
+  var host = el('ballfield');
+  while (pool.length < n){
+    var d = document.createElement('div');
+    d.className = 'ball';
+    host.appendChild(d);
+    pool.push({ el: d });
+  }
+  while (pool.length > n){
+    var last = pool.pop();
+    if (last.el.parentNode) last.el.parentNode.removeChild(last.el);
+  }
+}
+
+function place(i, x, y, sz, noAnim){
+  var b = pool[i];
+  if (!b) return;
+  if (noAnim) b.el.style.transition = 'none';
+  b.el.style.width  = sz + 'px';
+  b.el.style.height = sz + 'px';
+  b.el.style.left = (x - sz/2) + 'px';
+  b.el.style.top  = (y - sz/2) + 'px';
+  if (noAnim){ void b.el.offsetWidth; b.el.style.transition = ''; }
+}
+
+/* 已飞入柱中的球彻底移出球池，免得下一变又“复活” */
+function pruneGone(){
+  for (var i = pool.length - 1; i >= 0; i--){
+    if (pool[i].el.className.indexOf('gone') >= 0){
+      if (pool[i].el.parentNode) pool[i].el.parentNode.removeChild(pool[i].el);
+      pool.splice(i, 1);
+    }
+  }
+}
+
+function clearBallFx(){
+  for (var i = 0; i < pool.length; i++){
+    pool[i].el.className = 'ball';
+    pool[i].el.style.transitionDelay = '0ms';
+    pool[i].el.style.transform = 'translate(0,0)';
+  }
+}
+
+/* =========================================================
+   四策一组：球一颗不动，只在原地用「手绘圈」把四颗圈起来
+   圈线＝这四颗球的圆盘并集外沿；遇别组球、遇划线就收口，故圈不相交
+   ========================================================= */
+function splitCells(idxs, pts, sizes, rect){
+  if (sizes.length === 1){
+    return [{ idx: idxs.slice(), rect: rect }];
+  }
+  var mid = Math.floor(sizes.length / 2);
+  var needLeft = 0;
+  for (var i = 0; i < mid; i++) needLeft += sizes[i];
+
+  var axisX = (rect.x1 - rect.x0) >= (rect.y1 - rect.y0);
+  var sorted = idxs.slice().sort(function(a, b){
+    return axisX ? (pts[a].x - pts[b].x) : (pts[a].y - pts[b].y);
+  });
+
+  var a = sorted[needLeft - 1], c = sorted[needLeft];
+  var cut = axisX ? (pts[a].x + pts[c].x) / 2 : (pts[a].y + pts[c].y) / 2;
+
+  var rA, rB;
+  if (axisX){
+    rA = { x0: rect.x0, y0: rect.y0, x1: cut,     y1: rect.y1 };
+    rB = { x0: cut,     y0: rect.y0, x1: rect.x1, y1: rect.y1 };
+  } else {
+    rA = { x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: cut     };
+    rB = { x0: rect.x0, y0: cut,     x1: rect.x1, y1: rect.y1 };
+  }
+  return splitCells(sorted.slice(0, needLeft), pts, sizes.slice(0, mid), rA)
+    .concat(splitCells(sorted.slice(needLeft), pts, sizes.slice(mid), rB));
+}
+
+/* 取一撮：从种子开始，每次挑离这一撮最近的补齐（保证圈得紧凑） */
+function takeNearest(pool, seed, need, pts){
+  var got = [seed];
+  var rest = [];
+  for (var i = 0; i < pool.length; i++) if (pool[i] !== seed) rest.push(pool[i]);
+
+  while (got.length < need && rest.length){
+    var bi = 0, bd = 1e18;
+    for (var k = 0; k < rest.length; k++){
+      var s = 0;
+      for (var q = 0; q < got.length; q++){
+        var dx = pts[rest[k]].x - pts[got[q]].x;
+        var dy = pts[rest[k]].y - pts[got[q]].y;
+        s += dx * dx + dy * dy;
+      }
+      s /= got.length;
+      if (s < bd){ bd = s; bi = k; }
+    }
+    got.push(rest[bi]);
+    rest.splice(bi, 1);
+  }
+  return got;
+}
+
+function bboxPad(idxs, pts, pad){
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (var i = 0; i < idxs.length; i++){
+    var q = pts[idxs[i]];
+    if (q.x < x0) x0 = q.x;
+    if (q.x > x1) x1 = q.x;
+    if (q.y < y0) y0 = q.y;
+    if (q.y > y1) y1 = q.y;
+  }
+  return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+}
+
+/* 四颗一撮：种子取“离本片重心最远”的那颗，再逐个挑最近的补齐 */
+function cluster4(idxs, pts){
+  var left = idxs.slice(), out = [];
+  while (left.length >= 4){
+    var cx = 0, cy = 0;
+    for (var i = 0; i < left.length; i++){ cx += pts[left[i]].x; cy += pts[left[i]].y; }
+    cx /= left.length; cy /= left.length;
+
+    var si = 0, far = -1;
+    for (var j = 0; j < left.length; j++){
+      var dx = pts[left[j]].x - cx, dy = pts[left[j]].y - cy;
+      var dd = dx * dx + dy * dy;
+      if (dd > far){ far = dd; si = j; }
+    }
+    var seed = left[si];
+    var g = takeNearest(left, seed, 4, pts);
+    out.push(g);
+    left = left.filter(function(x){ return g.indexOf(x) < 0; });
+  }
+  return out;
+}
+
+/* 两撮之间互换成员，把每一撮收得更紧（圈更小） */
+function clusterCost(g, pts){
+  var cx = 0, cy = 0;
+  for (var i = 0; i < g.length; i++){ cx += pts[g[i]].x; cy += pts[g[i]].y; }
+  cx /= g.length; cy /= g.length;
+  var m = 0;
+  for (var j = 0; j < g.length; j++){
+    var dx = pts[g[j]].x - cx, dy = pts[g[j]].y - cy;
+    var d = dx * dx + dy * dy;
+    if (d > m) m = d;
+  }
+  return m;
+}
+
+function refineClusters(gs, pts){
+  for (var pass = 0; pass < 3; pass++){
+    var changed = false;
+    for (var a = 0; a < gs.length; a++){
+      for (var b = a + 1; b < gs.length; b++){
+        var A = gs[a], B = gs[b];
+        var base = clusterCost(A, pts) + clusterCost(B, pts);
+        for (var u = 0; u < A.length; u++){
+          for (var v = 0; v < B.length; v++){
+            var t = A[u]; A[u] = B[v]; B[v] = t;
+            var now = clusterCost(A, pts) + clusterCost(B, pts);
+            if (now < base - 0.01){ base = now; changed = true; }
+            else { t = A[u]; A[u] = B[v]; B[v] = t; }
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+  return gs;
+}
+
+/* 跳过被挂起的那一枚；左右各自按 4 颗一格切分，余数单独归一撮 */
+function groupBalls(sides, pts, skip, stroke, sz){
+  var out = [];
+  ['L', 'R'].forEach(function(side){
+    var idxs = [];
+    for (var i = 0; i < sides.length; i++){
+      if (sides[i] === side && i !== skip) idxs.push(i);
+    }
+    var m = idxs.length;
+    if (!m) return;
+
+    /* 整除不是余零，而是余四（《占卜玄机》：若整除，不是余数为零，而是余数为四） */
+    var rem = m % 4 || 4;
+
+    /* 余数组：以离本侧重心最远的一颗作种子，就近凑够，圈成一小撮 */
+    var cx = 0, cy = 0;
+    for (var a = 0; a < m; a++){ cx += pts[idxs[a]].x; cy += pts[idxs[a]].y; }
+    cx /= m; cy /= m;
+
+    var seed = idxs[0], far = -1;
+    for (var b = 0; b < m; b++){
+      var dx = pts[idxs[b]].x - cx, dy = pts[idxs[b]].y - cy;
+      var dd = dx * dx + dy * dy;
+      if (dd > far){ far = dd; seed = idxs[b]; }
+    }
+    var remIdx = takeNearest(idxs, seed, rem, pts);
+    var rest = [];
+    for (var c = 0; c < m; c++) if (remIdx.indexOf(idxs[c]) < 0) rest.push(idxs[c]);
+
+    /* 余下的四颗一组：就近聚成紧凑的一撮，圈才圈得小、才不会彼此穿插 */
+    if (rest.length >= 4){
+      var gs = refineClusters(cluster4(rest, pts), pts);
+      for (var t = 0; t < gs.length; t++){
+        out.push({ idx: gs[t], rem: false, side: side });
+      }
+    }
+
+    /* 余数那一撮自己占一圈 */
+    out.push({ idx: remIdx, rem: true, side: side });
+  });
+  return out;
+}
+
+/* =========================================================
+   手绘圈：按每颗球的支撑函数定半径，加极轻抖动，
+   再用 Catmull-Rom 连成闭合曲线 —— 像人拿笔随手圈的一圈
+   ========================================================= */
+function loopGeom(g, pts, sz, stroke, seed){
+  var n = g.idx.length, cx = 0, cy = 0, R = sz / 2;
+  for (var i = 0; i < n; i++){ cx += pts[g.idx[i]].x; cy += pts[g.idx[i]].y; }
+  cx /= n; cy /= n;
+
+  var Rp = R + 2.3;        // 自己的球：线离球边约 2.3
+  var Rf = R + 3.6;        // 别组的球：到它就收口，天然留出缝
+  var N  = 48, th = [], rad = [];
+
+  /* 本组最远那颗到中心的距离，用来给圈一个“圆度下限”，免得画成一根香肠 */
+  var far0 = 0;
+  for (var f0 = 0; f0 < n; f0++){
+    var q0 = pts[g.idx[f0]];
+    var d0 = Math.sqrt((q0.x - cx) * (q0.x - cx) + (q0.y - cy) * (q0.y - cy)) + Rp;
+    if (d0 > far0) far0 = d0;
+  }
+  var floorR = far0 * 0.62;
+
+  /* 别组球挡在哪：这一方向最多画到多远 */
+  function foreignCap(ux, uy){
+    var cap = 1e9;
+    for (var o = 0; o < pts.length; o++){
+      if (g.idx.indexOf(o) >= 0) continue;
+      var ex = pts[o].x - cx, ey = pts[o].y - cy;
+      var ej = ex * ux + ey * uy;
+      var ep = ex * ex + ey * ey - ej * ej;
+      if (ep >= Rf * Rf || ej <= 0) continue;
+      var near = ej - Math.sqrt(Rf * Rf - ep);
+      if (near > 0 && near < cap) cap = near;
+    }
+    return cap;
+  }
+
+  /* 划线是一道墙：给定半径，返回这一方向最多能画到多远 */
+  function wallFor(ux, uy, r){
+    if (!stroke || stroke.length < 2) return 1e9;
+    if (ux > 0.02 || ux < -0.02){
+      var py = Math.max(1, Math.min(H - 1, cy + r * uy));
+      var bx = boundaryX(stroke, py), lim = 2.4;
+      return (g.side === 'L') ? (bx - lim - cx) / ux : (bx + lim - cx) / ux;
+    }
+    return 1e9;
+  }
+
+  for (var k = 0; k < N; k++){
+    var t  = k / N * Math.PI * 2;
+    var ux = Math.cos(t), uy = Math.sin(t);
+
+    /* 沿这一方向，本组四颗球的圆盘并集最远到哪 —— 圈就贴着这四颗的外沿 */
+    var best = 0;
+    for (var a = 0; a < n; a++){
+      var q  = pts[g.idx[a]];
+      var dx = q.x - cx, dy = q.y - cy;
+      var pj = dx * ux + dy * uy;
+      var pp = dx * dx + dy * dy - pj * pj;
+      if (pp > Rp * Rp) continue;
+      var far = pj + Math.sqrt(Rp * Rp - pp);
+      if (far > best) best = far;
+    }
+
+    /* 手绘感：极轻的呼吸；别组的球挡在前头就停，两圈在缝里各自收口 */
+    var wob = 0.55 + 0.4 * Math.sin(3 * t + seed * 1.7) + 0.22 * Math.sin(7 * t + seed * 4.3);
+    var r = Math.min(Math.max(best, floorR) + wob, foreignCap(ux, uy));
+
+    for (var pass = 0; pass < 2; pass++){
+      var wall = wallFor(ux, uy, r);
+      if (wall > 0 && wall < r) r = wall; else break;
+    }
+
+    rad.push(Math.max(1.5, r));
+    th.push(t);
+  }
+
+  /* 半径序列轻微平滑，抹掉台阶，像笔尖带出来的圆润 */
+  var sm = rad.slice();
+  for (var k2 = 0; k2 < N; k2++){
+    sm[k2] = (rad[(k2 - 1 + N) % N] + rad[k2] * 2 + rad[(k2 + 1) % N]) / 4;
+  }
+
+  /* 平滑有可能把个别点又推过球、推过线，这里按原挡位再收一次 */
+  for (var k5 = 0; k5 < N; k5++){
+    var ux5 = Math.cos(th[k5]), uy5 = Math.sin(th[k5]);
+    var cap5 = foreignCap(ux5, uy5);
+    if (cap5 > 0 && cap5 < sm[k5]) sm[k5] = cap5;
+    for (var p5 = 0; p5 < 2; p5++){
+      var wall5 = wallFor(ux5, uy5, sm[k5]);
+      if (wall5 > 0 && wall5 < sm[k5]) sm[k5] = wall5; else break;
+    }
+  }
+
+  var out = [];
+  for (var k3 = 0; k3 < N; k3++){
+    out.push({ x: cx + sm[k3] * Math.cos(th[k3]), y: cy + sm[k3] * Math.sin(th[k3]) });
+  }
+  return { cx: cx, cy: cy, th: th, rad: sm,
+           need: sm.map(function(v){ return Math.max(2, v - 1.2); }),
+           pts: out, side: g.side, rem: g.rem };
+}
+
+function insidePoly(p, poly){
+  var c = false;
+  for (var i = 0, j = poly.length - 1; i < poly.length; j = i++){
+    if (((poly[i].y > p.y) !== (poly[j].y > p.y)) &&
+        (p.x < (poly[j].x - poly[i].x) * (p.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) c = !c;
+  }
+  return c;
+}
+
+/* 圈与圈互不穿插：谁的点落进别人的圈里，就把那一点往自家中心收 */
+function avoidCross(loops){
+  for (var pass = 0; pass < 4; pass++){
+    var changed = false;
+    for (var a = 0; a < loops.length; a++){
+      for (var b = a + 1; b < loops.length; b++){
+        var A = loops[a], B = loops[b];
+        for (var side = 0; side < 2; side++){
+          var me = side ? B : A, other = side ? A : B;
+          for (var i = 0; i < me.pts.length; i++){
+            if (!insidePoly(me.pts[i], other.pts)) continue;
+            var nr = me.rad[i] - 1.1;
+            if (nr < me.need[i] - 1.2) nr = me.need[i] - 1.2;
+            if (nr < me.rad[i] - 1e-6){
+              me.rad[i] = nr;
+              me.pts[i] = { x: me.cx + nr * Math.cos(me.th[i]),
+                            y: me.cy + nr * Math.sin(me.th[i]) };
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+function smoothClosedPath(p){
+  var n = p.length;
+  var d = 'M' + p[0].x.toFixed(2) + ',' + p[0].y.toFixed(2);
+  for (var i = 0; i < n; i++){
+    var p0 = p[(i - 1 + n) % n], p1 = p[i], p2 = p[(i + 1) % n], p3 = p[(i + 2) % n];
+    var c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+    var c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+    d += 'C' + c1x.toFixed(2) + ',' + c1y.toFixed(2) + ' '
+       + c2x.toFixed(2) + ',' + c2y.toFixed(2) + ' '
+       + p2.x.toFixed(2) + ',' + p2.y.toFixed(2);
+  }
+  return d + 'Z';
+}
+
+/* 把各圈的路径画进席上，返回路径数组（余数圈后用于淡出） */
+function drawLoops(groups, pts, sz, stroke, animate){
+  var svg = el('dsvg');
+  var loops = [];
+  for (var i = 0; i < groups.length; i++){
+    loops.push(loopGeom(groups[i], pts, sz, stroke, i * 1.37 + (groups[i].side === 'L' ? 0.4 : 2.1)));
+  }
+  avoidCross(loops);
+
+  var paths = [];
+  for (var k = 0; k < loops.length; k++){
+    var g = groups[k], lp = loops[k];
+    var path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', smoothClosedPath(lp.pts));
+    path.setAttribute('fill', g.rem ? 'rgba(21,23,28,.055)' : 'none');
+    path.setAttribute('stroke', g.rem ? 'rgba(21,23,28,.66)' : 'rgba(21,23,28,.40)');
+    path.setAttribute('stroke-width', g.rem ? 1.4 : 1.05);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    if (!g.rem) path.setAttribute('stroke-dasharray', '3.4 3.2');
+    path.style.transition = 'opacity .34s';
+    if (animate){
+      path.style.opacity = '0';
+      (function(pe, delay){
+        later(delay, function(){ pe.style.opacity = '1'; });
+      })(path, 150 + k * 55);
+    }
+    svg.appendChild(path);
+    paths.push(path);
+  }
+  return paths;
+}
+
+/* =========================================================
+   飞行动画：黑球飞向挂一栏 / 三变柱
+   ========================================================= */
+function fly(srcRect, toX, toY, size, delay){
+  var d = document.createElement('div');
+  d.className = 'flyball';
+  d.style.width = size + 'px';
+  d.style.height = size + 'px';
+  d.style.left = srcRect.left + 'px';
+  d.style.top  = srcRect.top + 'px';
+  document.body.appendChild(d);
+  later(delay + 16, function(){
+    d.style.transform = 'translate(' + (toX - srcRect.left - size*0.15) + 'px,'
+                      + (toY - srcRect.top - size*0.15) + 'px) scale(.62)';
+  });
+  later(delay + 700, function(){ d.style.opacity = '0'; });
+  later(delay + 980, function(){ if (d.parentNode) d.parentNode.removeChild(d); });
+}
+
+/* 记录起飞点，延迟后让球消失并从该点飞向目标 */
+function armFlight(ball, toX, toY, delay){
+  var src = ball.el.getBoundingClientRect();
+  later(delay, function(){
+    ball.el.classList.add('gone');
+    fly(src, toX, toY, 12, 0);
+  });
+}
+
+function rectCenter(node){
+  var r = node.getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top + r.height/2, rect: r };
+}
+
+/* =========================================================
+   渲染
+   ========================================================= */
+/* 划线完成后的刷新：只动线、标签、计数与按钮，球一颗都不碰 */
+function paintSplit(b){
+  var d   = DATA[b];
+  var tot = totalOf(b);
+
+  for (var i = 0; i < pool.length; i++){
+    if (i === d.hangIdx) pool[i].el.classList.add('dark');
+    else pool[i].el.classList.remove('dark');
+  }
+
+  clear(el('dsvg'));
+  drawStroke(d.stroke || [], '#15171c', 1.9);
+
+  el('tagL').className = 'dtag on';
+  el('tagR').className = 'dtag on';
+  el('tagL').innerHTML = '左 <b>' + d.L + '</b>';
+  el('tagR').innerHTML = '右 <b>' + d.Rafter + '</b>　挂 1';
+
+  el('dchips').innerHTML =
+      '<span class="chip">左 ' + d.L + '</span>'
+    + '<span class="chip">右 ' + d.Rafter + '</span>'
+    + '<span class="chip black">挂 1</span>'
+    + '<span class="chip sum">合 ' + tot + '</span>';
+
+  el('dhint').innerHTML = '此线由你亲手所画，<b>原样保留</b>；线分左右两堆<br/>'
+    + '挂一取<b>右堆</b>最上一枚（图中变黑者），此策待揲四时归奇';
+
+  var btn = el('dbtn'), lnk = el('dlnk');
+  btn.className = 'btn';
+  btn.textContent = '下 一 步（揲四归奇）';
+  btn.onclick = function(){ setStep(S.step + 1); };
+  lnk.style.display = 'block';
+  lnk.textContent = '重新划线';
+  lnk.onclick = function(){
+    DATA[b] = null;
+    for (var q = b + 1; q < 3; q++) DATA[q] = null;
+    render();
+  };
+}
+
+function render(){
+  clearTimers();
+  var st = STEPS[S.step];
+  var b  = (st.b != null) ? st.b : 0;
+  var animate = (S.prev === S.step - 1);
+
+  /* 直接跳到某一步/成爻时，先把该变的数算出来，记录带与三变柱才不会空着 */
+  if (st.k === 'split' || st.k === 'count'){
+    ensureData(b);
+  } else if (st.k === 'yao'){
+    ensureData(2);
+    DATA[0].done = DATA[1].done = DATA[2].done = true;
+  }
+
+  /* ---- 记录带 ---- */
+  var rec = '';
+  var doneVal = (S.step === 7 && DATA[2]) ? DATA[2].next / 4 : null;
+  var doneInfo = (doneVal != null) ? yaoInfo(doneVal) : null;
+  for (var k = 0; k < 6; k++){
+    var has = (k === 0 && doneInfo);
+    var cls = (k === 0) ? (has ? 'has cur' : 'cur') : (has ? 'has' : '');
+    if (has && (doneVal === 6 || doneVal === 9)) cls += ' bian';
+    rec += '<div class="rec ' + cls + '">'
+         +   '<div class="k">' + YAO[k] + '</div>'
+         +   '<div class="v">' + (has
+                ? doneInfo.num + '<i class="yao-line mini ' + doneInfo.sym + '"></i>'
+                : '▢') + '</div>'
+         + '</div>';
+  }
+  el('record').innerHTML = rec;
+
+  /* ---- meta ---- */
+  var meta = '初爻 · ';
+  if (st.k === 'hang') meta += '起筮';
+  else if (st.k === 'yao') meta += '三变已毕';
+  else meta += '第 <b>' + (b + 1) + '</b> 变 · 第 ' + (S.step + 1) + '/8 步';
+  el('dmeta').innerHTML = meta;
+
+  /* ---- 挂一栏常驻 ---- */
+  el('hangslot').className = 'hangslot on';
+
+  /* ---- 圆席复位 ---- */
+  var oldCalc = el('circl').querySelector('.yao-calc');
+  if (oldCalc) oldCalc.parentNode.removeChild(oldCalc);
+  clear(el('boxes'));
+  clear(el('dsvg'));
+  el('tagL').className = 'dtag';
+  el('tagR').className = 'dtag';
+  el('cwrap').style.cursor = (st.k === 'split' && !DATA[b]) ? 'crosshair' : 'default';
+
+  /* ---- 底部复位 ---- */
+  var btn = el('dbtn'), hint = el('dhint'), lnk = el('dlnk');
+  btn.className = 'btn';
+  lnk.style.display = 'none';
+  lnk.onclick = null;
+  el('dchips').innerHTML = '';
+  el('dformula').style.display = 'none';
+  el('dformula').innerHTML = '';
+  el('dhint').innerHTML = '';
+
+  pruneGone();
+  clearBallFx();
+
+  /* ============ S1 挂一 ============ */
+  if (st.k === 'hang'){
+    var sp = spotsFor(49);
+    poolTo(49);
+    for (var i = 0; i < 49; i++) place(i, sp.pts[i].x, sp.pts[i].y, sp.sz, !animate);
+
+    hint.innerHTML = '五十策列于席，程序自动<b>拈出一枚</b>挂起<br/>'
+      + '此策为太极，自起筮至成卦<b>始终不动</b>，十八变皆不参与';
+    btn.textContent = '下 一 步（不可跳过）';
+    btn.onclick = function(){ setStep(1); };
+
+    /* 太极之策飞入上方挂一栏 */
+    if (animate){
+      el('hsBall').style.opacity = '0';
+      later(320, function(){
+        var c = rectCenter(el('circl'));
+        var t = rectCenter(el('hsBall'));
+        fly({ left: c.x - 6, top: c.y - 40 }, t.x, t.y, 12, 0);
+      });
+      later(1100, function(){ el('hsBall').style.opacity = ''; });
+    } else {
+      el('hsBall').style.opacity = '';
+    }
+  }
+
+  /* ============ S2 / S4 / S6 分二挂一 ============ */
+  else if (st.k === 'split'){
+    var tot = totalOf(b);
+    var sp2 = spotsFor(tot);
+    var res = DATA[b];
+    var same = (S.prev === S.step);          // 同一步重绘（比如刚画完线）：绝不重摆球
+    poolTo(tot);
+
+    var shift = animate && (S.prev === 2 || S.prev === 4);   // 从上一变揲四打散过来
+
+    if (!same){
+      if (shift){
+        /* 洗牌：先在原位炸开，再错峰飞到新的散乱位置 */
+        pool.forEach(function(p){
+          var ang = Math.random() * Math.PI * 2, rd = 9 + Math.random() * 11;
+          p.el.style.transitionDelay = '0ms';
+          p.el.style.transition = 'transform .18s ease-out';
+          p.el.style.transform = 'translate(' + (Math.cos(ang)*rd).toFixed(1) + 'px,'
+                              + (Math.sin(ang)*rd).toFixed(1) + 'px)';
+        });
+        later(180, function(){
+          pool.forEach(function(p, idx){
+            p.el.style.transition = '';
+            p.el.style.transitionDelay = (idx * 7) + 'ms';
+            p.el.style.transform = 'translate(0,0)';
+          });
+          for (var q = 0; q < tot; q++){
+            place(q, sp2.pts[q].x, sp2.pts[q].y, sp2.sz, false);
+          }
+        });
+        later(1100, function(){
+          pool.forEach(function(p){ p.el.style.transitionDelay = '0ms'; });
+        });
+      } else {
+        for (var j = 0; j < tot; j++){
+          place(j, sp2.pts[j].x, sp2.pts[j].y, sp2.sz, !animate);
+        }
+      }
+    }
+
+    if (res){
+      paintSplit(b);
+    } else {
+      drawGuide();
+      hint.innerHTML = '在球间<b>从上往下画一条线</b>，把 ' + tot + ' 策分成左右两堆<br/>'
+        + '画成什么线，就留什么线';
+      btn.textContent = '请 先 划 线 分 堆';
+      btn.className = 'btn wait';
+      btn.onclick = null;
+      lnk.style.display = 'block';
+      lnk.textContent = '看一次示范划线';
+      lnk.onclick = function(){
+        var s2 = demoStroke(b);
+        DATA[b] = computeSplit(b, s2, sp2.pts);
+        DATA[b].stroke = s2;
+        paintSplit(b);
+      };
+      bindDraw(b);
+    }
+  }
+
+  /* ============ S3 / S5 / S7 揲四归奇 ============ */
+  else if (st.k === 'count'){
+    ensureData(b);
+    renderCount(b, animate);
+  }
+
+  /* ============ S8 成爻 ============ */
+  else {
+    ensureData(2);
+    var remain = DATA[2].next;
+    var info = yaoInfo(remain / 4);
+    poolTo(0);
+    var cal = document.createElement('div');
+    cal.className = 'yao-calc';
+    cal.innerHTML = '<div class="yc-cap">三 变 余 策</div>'
+      + '<div class="yc-eq">' + remain + ' ÷ 4 ＝</div>'
+      + '<div class="yc-num">' + info.num + '</div>'
+      + '<div class="yc-sym"><i class="yao-line ' + info.sym + '"></i></div>';
+    el('circl').appendChild(cal);
+
+    hint.innerHTML = '<b>' + info.name + '</b> · ' + info.note
+      + '　｜　已记入上方六爻带的「初」位'
+      + '<br/>本原型只演初爻；六爻同法，十八变而成卦';
+    btn.textContent = '看 卦 象 结 果';
+    btn.onclick = function(){ go('s6'); };
+  }
+
+  renderPillars();
+  renderSteps();
+  el('stpname').innerHTML = '<b>S' + st.i + '</b> ' + st.full;
+  el('cap').innerHTML = CAPS[st.k + (st.b != null ? st.b : '')] || CAPS.default;
+}
+
+/* ---------------- 揲四：球位不动，四策一圈，余策归柱 ---------------- */
+function renderCount(b, animate){
+  var d   = DATA[b];
+  var tot = totalOf(b);
+  var sp  = spotsFor(tot);
+  var sz  = sp.sz;
+
+  var old = el('circl').querySelector('.yao-calc');
+  if (old) old.parentNode.removeChild(old);
+
+  /* 1. 球一颗都不动：沿用分二时那份落点 */
+  poolTo(tot);
+  for (var i = 0; i < tot; i++){
+    place(i, sp.pts[i].x, sp.pts[i].y, sz, true);
+  }
+
+  /* 2. 四策一圈：手绘感的闭合圈，先画圈，再把你的划线压在最上层 */
+  var groups   = groupBalls(d.sides, sp.pts, d.hangIdx, d.stroke, sp.sz);
+  var pathList = drawLoops(groups, sp.pts, sp.sz, d.stroke, animate);
+  var remPath  = [];
+  groups.forEach(function(g, k){ if (g.rem) remPath.push(pathList[k]); });
+
+  drawStroke(d.stroke || [], '#15171c', 1.9);
+  el('tagL').className = 'dtag on';
+  el('tagR').className = 'dtag on';
+  el('tagL').innerHTML = '左 <b>' + d.L + '</b>';
+  el('tagR').innerHTML = '右 <b>' + d.Rafter + '</b>　挂 1';
+
+  /* 4. 归奇诸策：挂 1 ＋ 右余 ＋ 左余 */
+  var remL = [], remR = [];
+  groups.forEach(function(g){
+    if (!g.rem) return;
+    if (g.side === 'L') remL = g.idx.slice();
+    else remR = g.idx.slice();
+  });
+  var went   = [d.hangIdx].concat(remR).concat(remL);
+  var segCnt = [1, remR.length, remL.length];
+
+  if (animate){
+    /* 余策逐一变黑 */
+    later(430, function(){
+      went.forEach(function(i2, k){
+        later(k * 55, function(){
+          if (pool[i2]) pool[i2].el.classList.add('dark');
+        });
+      });
+    });
+    /* 逐颗飞向右侧三变柱 */
+    later(780, function(){
+      var dotsEl = el('pillars').querySelectorAll('.pil-dots')[b];
+      if (!dotsEl) return;
+      var base = dotsEl.getBoundingClientRect();
+      var yCursor = base.top + 5;
+      var ptr = 0;
+      var cxTo = base.left + base.width / 2;
+      [0, 1, 2].forEach(function(si){
+        var cnt = segCnt[si];
+        for (var k = 0; k < cnt; k++){
+          var bi = went[ptr++];
+          if (bi == null || !pool[bi]) continue;
+          var ty = yCursor + k * 8.5 + 3.5;
+          armFlight(pool[bi], cxTo, ty, k * 45 + si * 30);
+        }
+        yCursor += cnt * 8.5 + 7 + 4;
+      });
+      /* 余组已空，圈随之淡出 */
+      later(520, function(){
+        remPath.forEach(function(pe){ pe.style.opacity = '0'; });
+      });
+      /* 柱内黑球随后逐个亮起 */
+      later(760, function(){
+        DATA[b].done = true;
+        renderPillars(true);
+      });
+    });
+  } else {
+    went.forEach(function(i2){ if (pool[i2]) pool[i2].el.classList.add('dark'); });
+    d.done = true;
+    renderPillars(true);
+  }
+
+  /* 底部：算式 */
+  el('dformula').style.display = 'block';
+  el('dformula').innerHTML =
+      '<div class="f-cap">本 变 余 策 · 归奇于扐</div>'
+    + '<div class="f-eq">' + tot
+    + ' － <b>1</b><span class="fl">挂</span>'
+    + ' － <b>' + d.r1 + '</b><span class="fl">右余</span>'
+    + ' － <b>' + d.r2 + '</b><span class="fl">左余</span>'
+    + ' ＝ <b>' + d.next + '</b></div>';
+
+  var fullGroups = 0;
+  groups.forEach(function(g){ if (g.idx.length === 4) fullGroups++; });
+
+  var divTip = (d.r1 === 4 || d.r2 === 4) ? '　整除者以四为余' : '';
+  el('dchips').innerHTML =
+      '<span class="chip">四策一组</span>'
+    + '<span class="chip">整组 ' + fullGroups + '</span>'
+    + '<span class="chip black">归奇 ' + (1 + d.r1 + d.r2) + divTip + '</span>';
+
+  el('dhint').innerHTML = '先揲右堆（已挂其一）得 <b>' + d.r1 + '</b>，再揲左堆得 <b>' + d.r2
+    + '</b>；整除者记四，故余数只在一至四之间<br/>'
+    + (b < 2
+      ? '归奇 ' + (1 + d.r1 + d.r2) + ' 策已入柱，余 ' + d.next + ' 策待洗牌重分'
+      : '三变既毕，余 ' + d.next + ' 策以待成爻');
+
+  var btn = el('dbtn');
+  btn.textContent = '下 一 步';
+  btn.onclick = function(){ setStep(S.step + 1); };
+}
+
+/* =========================================================
+   三变柱
+   ========================================================= */
+function renderPillars(animOne){
+  var names = ['一变','二变','三变'];
+  var html = '';
+  for (var b = 0; b < 3; b++){
+    var d = DATA[b];
+    var done = !!(d && d.done);
+    var r1 = d ? d.r1 : 0, r2 = d ? d.r2 : 0;
+    var counts = done ? [1, r1, r2] : [0, 0, 0];
+    var total = done ? (1 + r1 + r2) : 0;
+
+    var segs = '';
+    for (var s = 0; s < 3; s++){
+      var inner = '';
+      for (var k = 0; k < counts[s]; k++) inner += '<i class="bdot"></i>';
+      segs += '<div class="dseg">' + inner + '</div>';
+      if (s < 2) segs += '<div class="dgap"></div>';
+    }
+
+    html += '<div class="pil">'
+          +   '<div class="pil-lab">' + names[b] + '</div>'
+          +   '<div class="pil-num" style="color:' + (done ? '#15171c' : '#c3c7cd') + '">'
+          +     (done ? total : '—') + '</div>'
+          +   '<div class="pil-dots">' + segs + '</div>'
+          +   '<div class="pil-sub">' + (done ? ('1+' + r1 + '+' + r2) : '') + '</div>'
+          + '</div>';
+  }
+  el('pillars').innerHTML = html;
+}
+
+function renderSteps(){
+  var html = '';
+  for (var i = 0; i < STEPS.length; i++){
+    var c = i < S.step ? 'done' : (i === S.step ? 'cur' : '');
+    html += '<div class="stp ' + c + '">' + STEPS[i].i + '</div>';
+    if (i < STEPS.length - 1){
+      html += '<span class="stp-line ' + (i < S.step ? 'done' : '') + '"></span>';
+    }
+  }
+  el('steps').innerHTML = html;
+}
+
+/* =========================================================
+   笔迹 / 划线
+   ========================================================= */
+function drawStroke(pts, color, width){
+  if (!pts || pts.length < 2) return;
+  var svg = el('dsvg');
+  var d = '';
+  for (var i = 0; i < pts.length; i++){
+    d += (i ? ' L' : 'M') + pts[i].x.toFixed(1) + ',' + pts[i].y.toFixed(1);
+  }
+  var p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', d);
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', color);
+  p.setAttribute('stroke-width', width);
+  p.setAttribute('stroke-linecap', 'round');
+  p.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(p);
+}
+
+function drawGuide(){
+  drawStroke(demoStroke(1), 'rgba(21,23,28,.15)', 1.4);
+  var svg = el('dsvg');
+  if (svg.lastChild) svg.lastChild.setAttribute('stroke-dasharray', '3 6');
+}
+
+var DRAW = { on:false, pts:[], b:0 };
+
+function toLocal(e){
+  var r = el('cwrap').getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) / r.width  * W,
+    y: (e.clientY - r.top)  / r.height * H
+  };
+}
+
+function bindDraw(b){
+  var cw = el('cwrap');
+  cw.onpointerdown = function(e){
+    if (DATA[b]) return;
+    e.preventDefault();
+    try { cw.setPointerCapture(e.pointerId); } catch(err){}
+    DRAW.on = true; DRAW.b = b; DRAW.pts = [];
+    DRAW.pts.push(toLocal(e));
+    liveStroke();
+  };
+  cw.onpointermove = function(e){
+    if (!DRAW.on) return;
+    e.preventDefault();
+    var p = toLocal(e);
+    var last = DRAW.pts[DRAW.pts.length - 1];
+    if (!last || (p.x-last.x)*(p.x-last.x) + (p.y-last.y)*(p.y-last.y) > 4){
+      DRAW.pts.push(p);
+      liveStroke();
+    }
+  };
+  cw.onpointerup = function(){ if (DRAW.on){ DRAW.on = false; finishDraw(b); } };
+  cw.onpointercancel = function(){ DRAW.on = false; };
+}
+
+function liveStroke(){
+  clear(el('dsvg'));
+  drawStroke(DRAW.pts, '#15171c', 1.9);
+}
+
+function finishDraw(b){
+  var pts = DRAW.pts, ok = pts.length >= 6;
+  if (ok){
+    var ys = [];
+    for (var i = 0; i < pts.length; i++) ys.push(pts[i].y);
+    if (Math.max.apply(null, ys) - Math.min.apply(null, ys) < 70) ok = false;
+  }
+  if (!ok){
+    clear(el('dsvg'));
+    el('dhint').innerHTML = '<b>这条线太短了</b>，请从上往下贯穿过整片球再松手';
+    return;
+  }
+
+  var res  = computeSplit(b, pts, spotsFor(totalOf(b)).pts);
+
+  /* 挂一必须自右堆取，右堆不足两策则无从挂一；左堆为空则无从揲四 */
+  if (res.L < 1 || res.Rafter < 1){
+    clear(el('dsvg'));
+    el('dhint').innerHTML = '<b>这一线分得不合筮法</b>：左右两堆都得留够策数，'
+      + '右堆至少两策（挂一取一策后还要揲四）<br/>请重新画过';
+    return;
+  }
+
+  res.stroke = pts.slice();
+  DATA[b] = res;
+  for (var q = b + 1; q < 3; q++) DATA[q] = null;
+  paintSplit(b);          // 只刷线、标签与按钮，球一颗都不动
+}
+
+/* =========================================================
+   切换
+   ========================================================= */
+var CAPS = {
+  's1': '<b>① 起卦页</b>：不设输入框，只提示「请闭目凝神、心念所问之事」。上方一颗黑球带虚线箭头飞出，对应「拈出一枚不用」。',
+  hang: '<b>S1 挂一（虚一不用）</b>：圆席内散列四十九策，程序拈出的一枚黑球<b>飞到上方挂一栏</b>。此栏在整个一爻（三变）期间常驻不动，是「太极之策」的实体锚点。',
+  split0: '<b>S2 分二挂一（第一变）</b>：在圆席上亲手画线，画成什么形状就保留什么形状，<b>球一颗都不动</b>。松手后按线把 49 策分成左右两堆，<b>右堆最上一枚变黑挂起</b>（书云「挂一以象三」，这一枚要到揲四时才归奇）。',
+  split1: '<b>S4 分二挂一（第二变）</b>：上一变余下的策<b>洗牌重分</b>——球先炸开、再错峰落到新位置，然后重新划线。上方挂一栏的太极之策始终不动。',
+  split2: '<b>S6 分二挂一（第三变）</b>：以第二变所余之策入第三变，同样洗牌重分、重新划线。',
+  count0: '<b>S3 揲四归奇（第一变）</b>：不换页、球也不动 —— 就地用<b>手绘感的一圈</b>把四策圈起（圈贴着这四策，遇别策与划线处收口，故圈圈不相交）；余策变黑，全部<b>飞向右侧「一变」柱</b>。柱内三段留空当：挂一 1 ｜ 右余 ｜ 左余。',
+  count1: '<b>S5 揲四归奇（第二变）</b>：同一套动作 —— 四策一圈、余策变黑、飞入「二变」柱。柱内三段空开：挂一 1 ｜ 右余 r₂ ｜ 左余 r₁。',
+  count2: '<b>S7 揲四归奇（第三变）</b>：最后一变，余策归入「三变」柱。三柱齐亮后即可成爻。',
+  yao: '<b>S8 成爻</b>：三变余策 ÷ 4 得爻数，数字与爻画落入上方六爻记录的「初」位。',
+  's6': '<b>③ 卦象结果</b>：六爻齐备自动成卦，自下而上展示六爻与数字，卦名配朱红印章与卦辞。',
+  's7': '<b>④ 流程与状态机</b>：一爻八步，循环六次；每步只由用户点击推进，无自动跳转。',
+  default: ''
+};
+
+function go(id, step){
+  var scr = document.querySelectorAll('.scr');
+  for (var i = 0; i < scr.length; i++) scr[i].classList.add('hidden');
+  el(id).classList.remove('hidden');
+  var tabs = el('tabs').children;
+  for (var j = 0; j < tabs.length; j++){
+    tabs[j].classList.toggle('active', tabs[j].getAttribute('data-s') === id);
+  }
+  el('screen').scrollTop = 0;
+  if (id === 'sd'){
+    S.prev = -2;
+    setStep(step != null ? step : 0);
+  } else {
+    el('cap').innerHTML = CAPS[id] || '';
+  }
+}
+
+function setStep(n){
+  var to = Math.max(0, Math.min(7, n));
+  S.prev = S.step;
+  S.step = to;
+  var chips = el('stepchips').children;
+  for (var i = 0; i < chips.length; i++){
+    chips[i].classList.toggle('on', +chips[i].getAttribute('data-d') === S.step);
+  }
+  render();
+}
+
+function yaoInfo(v){
+  if (v === 6) return { num:'六', name:'老阴', sym:'yin',  note:'变爻，阴变阳' };
+  if (v === 7) return { num:'七', name:'少阳', sym:'yang', note:'不变之阳爻 ⚊' };
+  if (v === 8) return { num:'八', name:'少阴', sym:'yin',  note:'不变之阴爻 ⚋' };
+  return       { num:'九', name:'老阳', sym:'yang', note:'变爻，阳变阴' };
+}
+
+/* 顶部大类 tab */
+(function(){
+  var tabs = el('tabs').children;
+  for (var i = 0; i < tabs.length; i++){
+    (function(t){ t.onclick = function(){ go(t.getAttribute('data-s')); }; })(tabs[i]);
+  }
+})();
+/* 步骤 chip */
+(function(){
+  var chips = el('stepchips').children;
+  for (var i = 0; i < chips.length; i++){
+    (function(c){ c.onclick = function(){ go('sd', +c.getAttribute('data-d')); }; })(chips[i]);
+  }
+})();
+
+/* 起卦页白球堆 */
+(function(){
+  var host = el('field1');
+  var pts = genSpots(34, 9, 4, 312, 120);
+  for (var i = 0; i < pts.length; i++){
+    var b = document.createElement('div');
+    b.className = 'ball';
+    b.style.transition = 'none';
+    b.style.width = '9px'; b.style.height = '9px';
+    b.style.left = (pts[i].x - 4.5) + 'px';
+    b.style.top  = (pts[i].y - 4.5) + 'px';
+    host.appendChild(b);
+  }
+})();
+
+/* hash 直达 */
+(function(){
+  var h = location.hash.replace('#','');
+  if (!h){ el('cap').innerHTML = CAPS['s1']; return; }
+  if (/^d[0-7]$/.test(h)){ go('sd', +h.slice(1)); return; }
+  if (el(h)) go(h); else el('cap').innerHTML = CAPS['s1'];
+})();
+window.addEventListener('hashchange', function(){
+  var h = location.hash.replace('#','');
+  if (/^d[0-7]$/.test(h)) go('sd', +h.slice(1));
+  else if (el(h)) go(h);
+});
+</script>
+</body>
+</html>
