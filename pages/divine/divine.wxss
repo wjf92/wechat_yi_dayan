@@ -624,6 +624,7 @@
 
 .dhint {
   display: block;
+  margin-top: 14rpx;
   text-align: center;
   font-size: 20rpx;
   color: #71767f;
@@ -662,41 +663,44 @@
   font-weight: 600;
 }
 
-/* 算式 */
+/* 算式：不再做黑底卡片，与 .dhint 同一套说明文字排版 */
 .formula {
-  margin-top: 14rpx;
-  padding: 14rpx 10rpx;
-  background: #15171c;
-  border-radius: 18rpx;
+  margin-top: 10rpx;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .f-cap {
-  font-size: 17rpx;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 6rpx;
+  font-size: 18rpx;
+  color: #9aa0aa;
+  letter-spacing: 4rpx;
+  line-height: 1.7;
 }
 
 .f-eq {
-  margin-top: 6rpx;
-  font-size: 23rpx;
-  color: #ffffff;
+  margin-top: 2rpx;
+  font-size: 20rpx;
+  color: #71767f;
   white-space: nowrap;
   letter-spacing: 0.5rpx;
+  line-height: 1.7;
 }
 
 .f-note {
-  margin-top: 6rpx;
-  font-size: 17rpx;
-  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2rpx;
+  font-size: 18rpx;
+  color: #9aa0aa;
   letter-spacing: 0.5rpx;
+  line-height: 1.7;
 }
 
-/* 按钮 */
+/* 按钮：紧跟步骤轨，.dbot 的 18rpx 上边距即与步骤条的间距 */
 .btn {
-  margin-top: 18rpx;
+  margin-top: 0;
   width: 100%;
   padding: 22rpx 0;
   border-radius: 20rpx;

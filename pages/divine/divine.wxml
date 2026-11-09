@@ -104,21 +104,22 @@
     </block>
   </view>
 
-  <!-- 底部 -->
+  <!-- 底部：按钮紧接步骤轨；说明、算式等一律退到按钮下方 -->
   <view class="dbot">
+    <button class="btn {{btnWait ? 'wait' : ''}}" bindtap="onNext">{{btnText}}</button>
+
     <text class="dhint">{{hint}}</text>
 
     <view class="chips" wx:if="{{chips.length}}">
       <view class="chip {{item.dark ? 'dark-chip' : ''}} {{item.sum ? 'sum' : ''}}" wx:for="{{chips}}" wx:key="t">{{item.t}}</view>
     </view>
 
+    <!-- 算式不再用黑底卡片，改成与说明文字同一套淡雅排版 -->
     <view class="formula" wx:if="{{stepKey === 'count'}}">
       <text class="f-cap">本 变 余 策</text>
       <text class="f-eq">{{formulaText}}</text>
       <text class="f-note">{{formulaNote}}</text>
     </view>
-
-    <button class="btn {{btnWait ? 'wait' : ''}}" bindtap="onNext">{{btnText}}</button>
 
     <view class="lock" wx:if="{{stepKey === 'hang'}}">此步不可跳过 —— 须你亲自点「下一步」，太极之策方自席上拈出</view>
 
