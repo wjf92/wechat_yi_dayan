@@ -456,16 +456,14 @@ Page({
      S1 挂一（五十取一 · 太极）
      ========================================================= */
   enterHang: function () {
-    /* 新的一爻开场：掐断上一爻尚未触发的延时回调（归奇飞柱、洗牌、标红褪回、
-       太极飞球等），并递增爻代次，使任何已排队的旧回调自动失效。
-       这是「演下一爻圆席空白」的结构性防线：迟到的回调会把刚铺好的 50 策
-       再清空，或越过挂一直接推进到分二。 */
+    /* 全局仅此一次（首爻起筮）：五十策列席、太极位是虚位，等用户点「下一步」拈出。
+       掐断尚未触发的延时回调并递增爻代次，使任何已排队的旧回调自动失效。 */
     (this.timers || []).forEach(function (id) { clearTimeout(id); });
     this.timers = [];
     if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
     this.epoch = (this.epoch || 0) + 1;
 
-    this.steps = buildSteps(!this.taiji);
+    this.steps = buildSteps(true);       // 仅首爻八步（含「起筮 · 挂一」）
     this.stroke = [];
     this.sides = [];
     this.hang = -1;
@@ -488,14 +486,14 @@ Page({
       formulaNote: '',
       fly: [],
       btnWait: false,
-      hint: '大衍之数五十，其用四十有九 —— 五十策尽列于席\n点「下一步」：拈出一策，如日初升，缓缓升入上方太极位；本爻三变此策不动',
+      hint: '大衍之数五十，其用四十有九 —— 五十策尽列于席\n点「下一步」：拈出一策，如日初升，缓缓升入上方太极位；此后十八变此策常驻不动、不再回席',
       btnText: '下 一 步 · 拈 出 太 极'
     });
     this.chrome(0);
 
-    /* 幂等兜底：小程序原生渲染器把「成爻清空 → 新爻铺满」两次 setData
-       安排在同一帧时，wx:for 的 key 复用可能停在空列表；下一帧再核一次，
-       席上不是 50 策就补铺。正常流程下这里什么也不做，不会引起重绘或闪烁。 */
+    /* 幂等兜底：起筮铺 50 策时，若原生渲染器把两次 setData 合并在同一帧，
+       wx:for 的 key 复用可能停在空列表；下一帧再核一次，席上不是 50 策就补铺。
+       正常流程下这里什么也不做，不会引起重绘或闪烁。 */
     const self = this;
     const gen = this.epoch;
     this.later(function () {
@@ -544,7 +542,7 @@ Page({
     this.setData({
       btnWait: true,
       btnText: '如 日 初 升 …',
-      hint: '自五十策中拈出一策，如日之初升，虚一不用 —— 此策为太极\n本爻三变不再动，余四十九策以备分二'
+      hint: '自五十策中拈出一策，如日之初升，虚一不用 —— 此策为太极\n此后十八变常驻不动、不再回席，余四十九策以备分二'
     });
 
     /* 1. 拈起：这一枚变黑、微微抬起放大，停一会儿，让人看清取的是哪一颗 */
@@ -623,9 +621,9 @@ Page({
       /* 揲四既毕，余策球「洗牌重分」：错峰散到新的落点 */
       this.relayout(total, true);
     } else if (this.balls.length !== total) {
-      /* 首变只在席上策数不对时补铺（正常流程挂一动画已把 50 裁成 49，
-         不会走到这里），既避免重铺导致整席「闪无又闪现」，也保证
-         任何路径切到新的一变都不会留下空席 */
+      /* 每爻首变只在席上策数不对时补铺：首爻挂一动画已把 50 裁成 49；
+         二～上爻成爻清席后是 0，这里直接补铺 49（太极之策不再回席）。
+         避免正常流程重铺导致整席「闪无又闪现」，也不留空席。 */
       this.relayout(total, false);
     }
 
@@ -1062,6 +1060,49 @@ Page({
     this.chrome(this.steps.length - 1);
   },
 
+  /* 二～上爻开场：太极之策自首爻拈出后永久离席、十八变常驻不动，
+     因此不再重演「起筮 · 挂一」——七步轨、席上直接重铺 49 策，
+     第一步就是「1变 · 分二挂一」。成爻页已清空球堆，这里负责补回。 */
+  enterNextYao: function () {
+    /* 与 enterHang 同样的跨爻防线：掐断上一爻遗留的归奇/洗牌/标红回调 */
+    (this.timers || []).forEach(function (id) { clearTimeout(id); });
+    this.timers = [];
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    this.epoch = (this.epoch || 0) + 1;
+
+    this.steps = buildSteps(false);      // 七步：无「起筮 · 挂一」
+    this.changes = [];
+    this.totals = [49, 0, 0];
+    this.nextTotal = 0;
+    this.pillarInfo = [null, null, null];
+    this.clearInk();
+    this.balls = [];
+    this.renderBalls();
+
+    this.setData({
+      taijiOn: true,                    // 太极之策不回虚位、不重播日出动画
+      fly: [],
+      btnWait: false
+    });
+    this.enterSplit(0);                 // 补铺 49 策、七步轨、按钮与提示
+
+    this.setData({
+      hint: '太极之策已定，十八变不再回席 —— 本爻自 49 策起，直接分二\n'
+        + '在球间从上往下画一条线，分成左右两堆；松手后程序自右堆取一挂起'
+    });
+
+    /* 幂等兜底：同一帧里「成爻清空 → 新爻铺满」两次 setData 被合并时，
+       wx:for 可能停在空列表；下一帧核一次，非 49 策就补铺。 */
+    const self = this;
+    const gen = this.epoch;
+    this.later(function () {
+      if ((self.epoch || 0) !== gen) return;
+      if (self.balls.length !== 49 || (self.data.balls || []).length !== 49) {
+        self.relayout(49, false);
+      }
+    }, 30);
+  },
+
   /* =========================================================
      推进
      ========================================================= */
@@ -1105,12 +1146,10 @@ Page({
       wx.redirectTo({ url: '/pages/result/result' });
       return;
     }
-    /* 每一爻都从「挂一」重新起筮：成爻时清空的球堆要重新铺满 50 策，
-       太极位先回到虚位，由点「下一步」播放拈出飞入动画，而不是一进来就已落位。
-       enterHang() 内部会重置 steps / changes / 三变柱 / 墨迹，这里不必重复。 */
+    /* 太极之策自首爻拈出后永久离席：二～上爻不再重演「起筮 · 挂一」，
+       太极位保持实球，席上直接重铺 49 策、七步轨从「1变 · 分二挂一」起。 */
     this.yaoIndex += 1;
-    this.taiji = false;
     this.hangAnimating = false;
-    this.enterHang();
+    this.enterNextYao();
   }
 });
