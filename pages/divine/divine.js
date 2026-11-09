@@ -105,11 +105,16 @@ Page({
   },
 
   /* setTimeout 统一登记，卸载时一并清掉 */
+  /* 所有延时回调都绑在「当前这一爻」上：一旦进入新的一爻，旧回调一律作废。
+     否则上一爻归奇/洗牌/挂一动画遗留的 setTimeout 会在新爻铺好球之后才触发，
+     把刚铺满的圆席又清空、或直接推进到分二（用户看到的「演下一爻是空白」）。 */
   later: function (fn, ms) {
     if (!this.timers) this.timers = [];
     const self = this;
+    const epoch = this.epoch || 0;
     var id = setTimeout(function () {
       self.timers = (self.timers || []).filter(function (x) { return x !== id; });
+      if ((self.epoch || 0) !== epoch) return;   // 已换爻，迟到回调不再改写界面
       fn();
     }, ms);
     this.timers.push(id);
@@ -432,7 +437,10 @@ Page({
         });
       } else {
         next.push({
-          id: 'b' + (this.seq++), cx: pts[i].x, cy: pts[i].y, cls: 'pop',
+          /* 非动画重铺（开局）不带入场动画：否则后续任何列表重排都会让整席球
+             把「从无到有」的淡入重播一遍，看起来就是闪无又闪现 */
+          id: 'b' + (this.seq++), cx: pts[i].x, cy: pts[i].y,
+          cls: animate ? 'pop' : '',
           d: 0, dl: 0, ad: animate ? 300 + i * 6 : 0
         });
       }
@@ -446,6 +454,15 @@ Page({
      S1 挂一（五十取一 · 太极）
      ========================================================= */
   enterHang: function () {
+    /* 新的一爻开场：掐断上一爻尚未触发的延时回调（归奇飞柱、洗牌、标红褪回、
+       太极飞球等），并递增爻代次，使任何已排队的旧回调自动失效。
+       这是「演下一爻圆席空白」的结构性防线：迟到的回调会把刚铺好的 50 策
+       再清空，或越过挂一直接推进到分二。 */
+    (this.timers || []).forEach(function (id) { clearTimeout(id); });
+    this.timers = [];
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    this.epoch = (this.epoch || 0) + 1;
+
     this.steps = buildSteps(!this.taiji);
     this.stroke = [];
     this.sides = [];
@@ -469,16 +486,43 @@ Page({
       formulaNote: '',
       fly: [],
       btnWait: false,
-      hint: '大衍之数五十，其用四十有九 —— 五十策尽列于席\n点「下一步」：自席上拈出一策，飞入上方太极位；此策十八变始终不动',
+      hint: '大衍之数五十，其用四十有九 —— 五十策尽列于席\n点「下一步」：拈出一策，如日初升，缓缓升入上方太极位；本爻三变此策不动',
       btnText: '下 一 步 · 拈 出 太 极'
     });
     this.chrome(0);
+
+    /* 幂等兜底：小程序原生渲染器把「成爻清空 → 新爻铺满」两次 setData
+       安排在同一帧时，wx:for 的 key 复用可能停在空列表；下一帧再核一次，
+       席上不是 50 策就补铺。正常流程下这里什么也不做，不会引起重绘或闪烁。 */
+    const self = this;
+    const gen = this.epoch;
+    this.later(function () {
+      if ((self.epoch || 0) !== gen) return;
+      if (self.balls.length !== 50 || (self.data.balls || []).length !== 50) {
+        self.relayout(50, false);
+      }
+    }, 30);
   },
 
-  /* S1 的动作：把最上一策拈起变黑 → 原位撤去 → 飞入上方太极位 → 余 49 策 */
+  /* S1 的动作：拈起变黑（看得出是哪一策）→ 如日初升，缓缓升入太极位 → 余 49 策
+     「日出」分四拍：变黑凝住 → 光晕初萌、微微浮起（露头）→ 缓升归位 → 落定光环。
+     每一拍都是一次独立的 setData，彼此间隔 ≥300ms；不靠「两次 setData 的差值」
+     来撑 transition 起点（真机上那两帧常被合并，看起来就是直接闪现）。
+     位移之外的光感由 WXSS keyframes 独立承担，即使某段位移被合并，
+     也仍有完整的由暗转明、光晕铺开的过程可见。
+     落定之后绝不再重绘球堆，避免整席球「闪无又闪现」。 */
   takeTaiji: function () {
     if (this.hangAnimating) return;
     const self = this;
+    /* 挂一总时长 2000ms：改这一组即可整体调速，四段相加须与 WXSS 里
+       sunBody / sunGlow 的 animation 时长（1600ms）对得上。 */
+    const BLACK_MS = 420;      // 拈起变黑、抬起，凝住让人看清取的是哪一策
+    const LIFT_MS = 160;       // 飞球接手：先以 d:0 硬渲染起始帧，日晕开始萌动
+    const HOVER_MS = 260;      // 如日之初升：先垂直浮起 16px，光晕铺开
+    const FLY_MS = 1000;       // 缓缓升空，慢起缓停，飞入上方太极位
+    const SETTLE_MS = 160;     // 落定，光环扩散，实球显形
+    const HOVER_PX = 16;       // 「跃出地平线」的那一下上浮
+    const PICK_SC = 1.26;      // 与 .ball.dark.pick 的放大一致，飞球接手时不缩一下
     if (!this.balls.length) {             // 极端兜底：没球就直接推进
       this.taiji = true;
       this.setData({ taijiOn: true, fly: [] });
@@ -497,13 +541,13 @@ Page({
 
     this.setData({
       btnWait: true,
-      btnText: '拈 出 太 极 …',
-      hint: '自五十策中拈出一策，虚一不用 —— 此策为太极\n十八变自始至终不动，余四十九策以备分二'
+      btnText: '如 日 初 升 …',
+      hint: '自五十策中拈出一策，如日之初升，虚一不用 —— 此策为太极\n本爻三变不再动，余四十九策以备分二'
     });
 
-    /* 1. 拈起：这一枚先变黑，让人看清是从哪里取的 */
-    this.balls[pick].cls = 'dark';
-    this.balls[pick].d = 180;
+    /* 1. 拈起：这一枚变黑、微微抬起放大，停一会儿，让人看清取的是哪一颗 */
+    this.balls[pick].cls = 'dark pick';
+    this.balls[pick].d = 260;
     this.renderBalls();
 
     /* 2. 离席起飞：起飞前重测一次位置（页面滚过也不跑偏） */
@@ -512,13 +556,13 @@ Page({
         const r = self.circleRect, tr = self.taijiRect;
         self.balls.splice(pick, 1);
         self.pts.splice(pick, 1);
-        self.renderBalls();                       // 在席之策 50 → 49
+        self.renderBalls();                       // 在席之策 50 → 49，其余球一颗不动
 
         const done = function () {
           self.taiji = true;
           self.hangAnimating = false;
           self.setData({ taijiOn: true, fly: [] });
-          self.enterSplit(0);
+          self.enterSplit(0);                    // 此处不再碰球堆
         };
         if (!r || !tr) { done(); return; }       // 量不到位置就退化为直接落位
 
@@ -528,18 +572,32 @@ Page({
         const ty = Math.round(tr.top + tr.height / 2 - y0 - sz / 2);
         const sc = Math.round((46 * self.rpx / sz) * 100) / 100;   // 落到 46rpx 的太极球
 
+        /* 2. 飞球接手：先在原位以 d:0 硬渲染一帧（同位置、同大小、同色、同缩放），
+           并挂上 .sun，由 keyframes 独立把日晕从暗养到明。
+           这一帧不带任何位移过渡，即使后续 setData 被合并也不会「瞬移」。 */
         self.setData({
-          fly: [{ id: 'taiji', x: x0, y: y0, size: sz, d: 560, dl: 0, land: false, tx: 0, ty: 0, sc: 1 }]
+          fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                  d: 0, dl: 0, land: false, tx: 0, ty: 0, sc: PICK_SC }]
         });
+        /* 3. 露头：先垂直微微浮起，像日轮挣出地平线，光晕铺开 */
         self.later(function () {
           self.setData({
-            fly: [{ id: 'taiji', x: x0, y: y0, size: sz, d: 560, dl: 0, land: false, tx: tx, ty: ty, sc: sc }]
+            fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                    d: HOVER_MS, dl: 0, land: false, tx: 0, ty: -HOVER_PX,
+                    sc: Math.round(PICK_SC * 1.04 * 100) / 100 }]
           });
-        }, 30);
-        /* 3. 落定：飞球隐去、太极位那颗实球显形，同尺寸同位置，看不出接缝 */
-        self.later(done, 620);
+        }, LIFT_MS);
+        /* 4. 升空：慢起缓停，斜斜升入上方太极位 */
+        self.later(function () {
+          self.setData({
+            fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                    d: FLY_MS, dl: 0, land: false, tx: tx, ty: ty, sc: sc }]
+          });
+        }, LIFT_MS + HOVER_MS);
+        /* 5. 落定：飞球隐去、太极位实球显形，同尺寸同位置，看不出接缝 */
+        self.later(done, LIFT_MS + HOVER_MS + FLY_MS + SETTLE_MS);
       });
-    }, 220);
+    }, BLACK_MS);
   },
 
   /* =========================================================
@@ -563,6 +621,9 @@ Page({
       /* 揲四既毕，余策球「洗牌重分」：错峰散到新的落点 */
       this.relayout(total, true);
     } else if (this.balls.length !== total) {
+      /* 首变只在席上策数不对时补铺（正常流程挂一动画已把 50 裁成 49，
+         不会走到这里），既避免重铺导致整席「闪无又闪现」，也保证
+         任何路径切到新的一变都不会留下空席 */
       this.relayout(total, false);
     }
 
@@ -1042,10 +1103,12 @@ Page({
       wx.redirectTo({ url: '/pages/result/result' });
       return;
     }
+    /* 每一爻都从「挂一」重新起筮：成爻时清空的球堆要重新铺满 50 策，
+       太极位先回到虚位，由点「下一步」播放拈出飞入动画，而不是一进来就已落位。
+       enterHang() 内部会重置 steps / changes / 三变柱 / 墨迹，这里不必重复。 */
     this.yaoIndex += 1;
-    this.pillarInfo = [null, null, null];
-    this.changes = [];
-    this.steps = buildSteps(false);      // 太极已立，此后每爻七步
-    this.enterSplit(0);
+    this.taiji = false;
+    this.hangAnimating = false;
+    this.enterHang();
   }
 });

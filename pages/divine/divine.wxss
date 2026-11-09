@@ -128,6 +128,7 @@
 
 /* 未拈出之前只留一个淡虚位，不预先摆那颗黑球 */
 .tj-ring {
+  position: relative;
   width: 78rpx;
   height: 78rpx;
   flex: 0 0 78rpx;
@@ -144,6 +145,25 @@
 .taiji.on .tj-ring {
   border-color: #15171c;
   animation: tjbreath 3.6s ease-in-out infinite;
+}
+
+/* 日轮升定：落定那一瞬自虚位荡开一圈暖光，随后归于常驻的墨色 */
+.taiji.on .tj-ring::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 190, 96, 0.85);
+  box-shadow: 0 0 22rpx 8rpx rgba(255, 178, 80, 0.42);
+  animation: sunLand 700ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunLand {
+  0%   { opacity: 0.9; transform: scale(0.62); }
+  100% { opacity: 0;   transform: scale(1.6); }
 }
 
 @keyframes tjbreath {
@@ -164,8 +184,9 @@
   background: #15171c;
   box-shadow: 0 4rpx 12rpx rgba(21, 23, 28, 0.45);
   opacity: 0;
-  transform: scale(0.32);
-  transition: opacity 0.18s ease, transform 0.28s cubic-bezier(0.2, 1.5, 0.4, 1);
+  transform: scale(0.94);
+  /* 落定不再弹跳：与飞球几乎同尺寸同位置，稳稳涨到实位，接缝看不出来 */
+  transition: opacity 0.1s ease, transform 0.2s ease-out;
 }
 
 /* 飞球落定的同一瞬显形，尺寸位置与飞球完全一致，接缝看不出来 */
@@ -312,6 +333,13 @@
   background-color: #15171c;
   border-color: #15171c;
   box-shadow: 0 3rpx 8rpx rgba(21, 23, 28, 0.42);
+}
+
+/* 拈起为太极的那一策：变黑后微微抬起放大，明确告诉占者取的是哪一颗 */
+.ball.dark.pick {
+  transform: scale(1.26);
+  z-index: 6;
+  box-shadow: 0 6rpx 18rpx rgba(21, 23, 28, 0.55), 0 0 0 5rpx rgba(21, 23, 28, 0.14);
 }
 
 /* 归奇已离席：原位留一个虚线小圈，标明这几策是从哪儿扐出去的 */
@@ -731,4 +759,84 @@
   background-color: #15171c;
   border: none;
   box-shadow: none;
+}
+
+/* ================= 挂一 · 如日之初升 =================
+   位移由 JS 分四拍喂给 transition（慢起缓停），光感则全交给这里的
+   keyframes 独立承担：即使某次 setData 在真机上被合并、位移没播出来，
+   「由暗转明 → 日晕铺开 → 光华收回」的完整过程依然看得见，不会像闪现。 */
+.flyball.sun {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.34, 0.02, 0.22, 1);
+  animation: sunBody 1600ms ease-in-out both;
+}
+
+/* 本体：墨色日轮由内敛到镀上暖金边，升定后光华收回 */
+@keyframes sunBody {
+  0% {
+    border-color: rgba(255, 198, 104, 0);
+    box-shadow: 0 3rpx 10rpx rgba(21, 23, 28, 0.45);
+  }
+  16% {
+    border-color: rgba(255, 198, 104, 0.92);
+    box-shadow: 0 0 16rpx 4rpx rgba(255, 182, 84, 0.62),
+                0 0 34rpx 12rpx rgba(232, 126, 46, 0.30);
+  }
+  62% {
+    border-color: rgba(255, 210, 130, 0.78);
+    box-shadow: 0 0 22rpx 7rpx rgba(255, 182, 84, 0.55),
+                0 0 48rpx 18rpx rgba(232, 126, 46, 0.24);
+  }
+  100% {
+    border-color: rgba(255, 198, 104, 0);
+    box-shadow: 0 3rpx 10rpx rgba(21, 23, 28, 0.45);
+  }
+}
+
+/* 日晕：朱金暖光自球心向外铺开，再随升空缓缓淡去 */
+.flyball.sun::before {
+  content: "";
+  position: absolute;
+  left: -80%;
+  top: -80%;
+  width: 260%;
+  height: 260%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+              rgba(255, 214, 138, 0.62) 0%,
+              rgba(255, 176, 76, 0.34) 28%,
+              rgba(224, 64, 47, 0.16) 48%,
+              rgba(224, 64, 47, 0) 70%);
+  opacity: 0;
+  transform: scale(0.5);
+  animation: sunGlow 1600ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunGlow {
+  0%   { opacity: 0;    transform: scale(0.5); }
+  20%  { opacity: 0.95; transform: scale(1.0); }
+  64%  { opacity: 0.78; transform: scale(1.32); }
+  100% { opacity: 0;    transform: scale(1.62); }
+}
+
+/* 日冕环：一圈细金环自轮缘荡开，像旭日的光波 */
+.flyball.sun::after {
+  content: "";
+  position: absolute;
+  left: -4rpx;
+  right: -4rpx;
+  top: -4rpx;
+  bottom: -4rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 196, 100, 0.9);
+  opacity: 0;
+  animation: sunRim 1200ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunRim {
+  0%   { opacity: 0;    transform: scale(0.9); }
+  18%  { opacity: 0.85; transform: scale(1.0); }
+  55%  { opacity: 0.35; transform: scale(1.9); }
+  78%  { opacity: 0.6;  transform: scale(1.0); }
+  100% { opacity: 0;    transform: scale(2.3); }
 }

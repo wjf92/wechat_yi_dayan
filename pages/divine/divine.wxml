@@ -127,7 +127,7 @@
 
   <!-- 飞球层：余策离席飞向柱中，落定后收成柱内小黑点 -->
   <view
-    class="flyball {{item.land ? 'land' : ''}}"
+    class="flyball {{item.sun ? 'sun' : ''}} {{item.land ? 'land' : ''}}"
     wx:for="{{fly}}"
     wx:key="id"
     style="left:{{item.x}}px;top:{{item.y}}px;width:{{item.size}}px;height:{{item.size}}px;transform:translate({{item.tx}}px,{{item.ty}}px) scale({{item.sc}});transition-duration:{{item.d}}ms;transition-delay:{{item.dl}}ms"
