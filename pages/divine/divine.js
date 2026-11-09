@@ -5,15 +5,17 @@ const YAO = ['初', '二', '三', '四', '五', '上'];
 const CN = { 6: '六', 7: '七', 8: '八', 9: '九' };
 const BIAN = ['一变', '二变', '三变'];
 
-/* 一爻步骤：首爻八步（含 S1 五十取一），太极既立之后七步 */
+/* 一爻步骤：首爻八步（含第 1 步五十取一），太极既立之后七步。
+   步骤名一律「阶段 · 动作」，不再带 S1–S8 编号；三变以「1变 / 2变 / 3变」领起。 */
 function buildSteps(withHang) {
   const s = [];
-  if (withHang) s.push({ k: 'hang', lab: '挂一', full: '挂一 · 虚一不用' });
+  if (withHang) s.push({ k: 'hang', lab: '挂一', full: '起筮 · 挂一' });
   for (let b = 0; b < 3; b++) {
-    s.push({ k: 'split', b: b, lab: '分二挂一', full: '分二挂一 · 第' + (b + 1) + '变' });
-    s.push({ k: 'count', b: b, lab: '揲四归奇', full: '揲四归奇 · 第' + (b + 1) + '变' });
+    const lead = (b + 1) + '变 · ';
+    s.push({ k: 'split', b: b, lab: '分二挂一', full: lead + '分二挂一' });
+    s.push({ k: 'count', b: b, lab: '揲四归奇', full: lead + '揲四归奇' });
   }
-  s.push({ k: 'yao', lab: '成爻', full: '成爻 · 三变既毕' });
+  s.push({ k: 'yao', lab: '成爻', full: '三变既毕 · 成爻' });
   return s;
 }
 
@@ -22,7 +24,7 @@ Page({
     step: 0,
     stepKey: 'hang',
     metaText: '初爻 · 起筮',
-    stepName: 'S1 挂一 · 虚一不用',
+    stepName: '起筮 · 挂一',
     rails: [],
     yaoDots: [],
     pillars: [],
@@ -349,7 +351,7 @@ Page({
       yaoDots: this.buildRecord(this.yaoIndex),
       pillars: pillars,
       metaText: meta,
-      stepName: 'S' + (n + 1) + ' ' + st.full
+      stepName: st.full
     });
   },
 
