@@ -1,0 +1,51 @@
+<view class="page">
+  <block wx:if="{{ready}}">
+    <view class="sec-title serif">卦象生成</view>
+    <view class="rule"></view>
+
+    <view class="hex">
+      <view class="hex-line" wx:for="{{lines}}" wx:key="label">
+        <text class="hex-label">{{item.label}}</text>
+        <view class="hex-bars">
+          <view class="bar {{item.changing ? 'changing' : ''}}" wx:if="{{item.yang}}"></view>
+          <view class="yin" wx:else>
+            <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
+            <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
+          </view>
+        </view>
+        <text class="hex-val">{{item.valueText}}</text>
+      </view>
+    </view>
+
+    <view class="hex-head">
+      <view class="seal serif">{{shortName}}</view>
+      <text class="hex-name serif">{{hexName}}</text>
+    </view>
+    <view class="trigrams">{{upper}} · {{lower}}</view>
+
+    <view class="juan">
+      <text class="juan-label">卦辞</text>
+      <text class="juan-text serif">{{judgment}}</text>
+    </view>
+
+    <view class="change-card" wx:if="{{hasChange}}">
+      <text class="change-title">变爻：{{changeText}}</text>
+      <view class="change-to">
+        <text class="change-to-label">之卦</text>
+        <text class="change-to-name serif">{{changedName}}</text>
+      </view>
+      <text class="change-judge serif">{{changedJudgment}}</text>
+      <text class="change-tip">有变爻时，兼看本卦与之卦，以变爻爻辞为断。</text>
+    </view>
+    <view class="change-card" wx:else>
+      <text class="change-title">六爻皆不变</text>
+      <text class="change-tip">之卦即本卦，依本卦卦辞为断。</text>
+    </view>
+
+    <view class="time-line">{{timeText}}</view>
+
+    <button class="btn" wx:if="{{!saved}}" bindtap="onSave">保 存 占 例</button>
+    <button class="btn ghost" bindtap="onRestart">重 新 起 卦</button>
+    <button class="btn ghost" bindtap="onHistory">查 看 历 史</button>
+  </block>
+</view>

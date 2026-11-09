@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/divine/divine",
+    "pages/result/result",
+    "pages/history/history"
+  ],
+  "window": {
+    "navigationBarTitleText": "大衍占筮",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

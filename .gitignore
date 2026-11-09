@@ -1,0 +1,13 @@
+# 系统 / 编辑器
+.DS_Store
+*.log
+.workbuddy/
+node_modules/
+miniprogram_npm/
+
+# 微信开发者工具本机私有配置（含个人路径与本地设置）
+project.private.config.json
+
+# 预览产物：二维码有时效，且含本机编译信息
+preview-qr.png
+preview-info.json

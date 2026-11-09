@@ -1,0 +1,230 @@
+page {
+  min-height: 100%;
+  background: #f5f6f8;
+  color: #15171c;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 40rpx 32rpx 60rpx;
+  box-sizing: border-box;
+}
+
+/* ============ 球 ============ */
+.ball {
+  position: absolute;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3rpx solid #15171c;
+  box-sizing: border-box;
+  box-shadow: 0 2rpx 4rpx rgba(21, 23, 28, 0.16);
+}
+
+.ball.dark {
+  background: #15171c;
+  border-color: #15171c;
+  box-shadow: 0 3rpx 8rpx rgba(21, 23, 28, 0.32);
+}
+
+.ball.hole {
+  background: transparent;
+  border: 3rpx dashed #aab0b8;
+  box-shadow: none;
+}
+
+/* ============ 按钮 ============ */
+.btn {
+  margin-top: 28rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 24rpx;
+  font-size: 30rpx;
+  letter-spacing: 8rpx;
+  background: #e0402f;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 8rpx 24rpx rgba(224, 64, 47, 0.28);
+  padding: 0;
+}
+
+.btn::after {
+  border: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: #15171c;
+  border: 2rpx solid #15171c;
+  box-shadow: none;
+}
+
+.btn.is-disabled {
+  background: #e7e9ec;
+  color: #a8adb4;
+  box-shadow: none;
+}
+
+.btn.ghost.is-disabled {
+  background: transparent;
+  color: #a8adb4;
+  border-color: #dcdfe4;
+}
+
+/* ============ 通用文字 ============ */
+.sec-title {
+  text-align: center;
+  font-size: 38rpx;
+  font-weight: 700;
+  letter-spacing: 8rpx;
+}
+
+.rule {
+  width: 72rpx;
+  height: 6rpx;
+  background: #e0402f;
+  border-radius: 4rpx;
+  margin: 14rpx auto 20rpx;
+}
+
+.hint {
+  text-align: center;
+  font-size: 24rpx;
+  color: #71767f;
+  line-height: 1.9;
+}
+
+.hint-sub {
+  display: block;
+  color: #9aa1a8;
+}
+
+.img-note {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 21rpx;
+  color: #a2a6ad;
+  line-height: 1.7;
+}
+
+.card {
+  background: #ffffff;
+  border: 2rpx solid #eceef1;
+  border-radius: 28rpx;
+  padding: 26rpx;
+  box-shadow: 0 2rpx 6rpx rgba(21, 23, 28, 0.04);
+}
+
+/* ============ 进度条 ============ */
+.stepbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafbfc;
+  border: 2rpx solid #eceef1;
+  border-radius: 24rpx;
+  padding: 14rpx 22rpx;
+  margin-bottom: 26rpx;
+}
+
+.yaos {
+  display: flex;
+}
+
+.yao-dot {
+  width: 42rpx;
+  height: 42rpx;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  border: 2rpx solid #dcdfe4;
+  color: #b6bac1;
+  font-size: 20rpx;
+  line-height: 38rpx;
+  text-align: center;
+  background: #ffffff;
+}
+
+.yao-dot.done {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+}
+
+.yao-dot.cur {
+  border: 3rpx solid #e0402f;
+  color: #e0402f;
+  font-weight: 700;
+}
+
+.bians {
+  display: flex;
+  align-items: center;
+}
+
+.bian-text {
+  font-size: 22rpx;
+  color: #71767f;
+  margin-right: 10rpx;
+}
+
+.bian-seg {
+  width: 28rpx;
+  height: 8rpx;
+  border-radius: 6rpx;
+  background: #dcdfe4;
+  margin-left: 6rpx;
+}
+
+.bian-seg.on {
+  background: #15171c;
+}
+
+/* ============ 计数胶囊 ============ */
+.chips {
+  display: flex;
+  justify-content: center;
+  margin-top: 20rpx;
+}
+
+.chip {
+  border: 2rpx solid #15171c;
+  border-radius: 999rpx;
+  padding: 4rpx 22rpx;
+  font-size: 24rpx;
+  margin: 0 8rpx;
+  background: #ffffff;
+}
+
+.chip.sum {
+  background: #e0402f;
+  border-color: #e0402f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.chip.dark-chip {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+}
+
+/* ============ 锁定提示 ============ */
+.lock {
+  margin-top: 20rpx;
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: #e0402f;
+  background: #fdeeeb;
+  border: 2rpx dashed #e0402f;
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+  text-align: center;
+}

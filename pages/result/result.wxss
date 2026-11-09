@@ -1,0 +1,172 @@
+.hex {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 30rpx;
+}
+
+.hex-line {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.hex-label {
+  width: 44rpx;
+  text-align: right;
+  font-size: 24rpx;
+  color: #71767f;
+  margin-right: 18rpx;
+  font-family: "Songti SC", "STSong", serif;
+}
+
+.hex-bars {
+  width: 240rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bar {
+  width: 240rpx;
+  height: 18rpx;
+  background: #15171c;
+  border-radius: 4rpx;
+}
+
+.bar.half {
+  width: 108rpx;
+}
+
+.bar.changing {
+  background: #e0402f;
+}
+
+.yin {
+  width: 240rpx;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hex-val {
+  width: 90rpx;
+  font-size: 22rpx;
+  color: #15171c;
+  margin-left: 18rpx;
+}
+
+.hex-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 34rpx;
+}
+
+.seal {
+  width: 72rpx;
+  height: 72rpx;
+  line-height: 1.15;
+  border-radius: 14rpx;
+  background: #e0402f;
+  color: #ffffff;
+  font-size: 24rpx;
+  text-align: center;
+  padding: 8rpx 6rpx;
+  box-sizing: border-box;
+  margin-right: 18rpx;
+  box-shadow: 0 6rpx 14rpx rgba(224, 64, 47, 0.32);
+}
+
+.hex-name {
+  font-size: 42rpx;
+  font-weight: 700;
+  letter-spacing: 6rpx;
+}
+
+.trigrams {
+  margin-top: 10rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #71767f;
+  letter-spacing: 2rpx;
+}
+
+.juan {
+  margin-top: 34rpx;
+  background: #ffffff;
+  border: 2rpx solid #eceef1;
+  border-radius: 24rpx;
+  padding: 26rpx;
+  box-shadow: 0 2rpx 6rpx rgba(21, 23, 28, 0.04);
+}
+
+.juan-label {
+  display: block;
+  font-size: 21rpx;
+  color: #e0402f;
+  letter-spacing: 4rpx;
+  margin-bottom: 12rpx;
+}
+
+.juan-text {
+  display: block;
+  font-size: 30rpx;
+  line-height: 1.9;
+  letter-spacing: 2rpx;
+}
+
+.change-card {
+  margin-top: 22rpx;
+  background: #fafbfc;
+  border: 2rpx solid #eceef1;
+  border-radius: 24rpx;
+  padding: 24rpx;
+}
+
+.change-title {
+  display: block;
+  font-size: 24rpx;
+  color: #15171c;
+  letter-spacing: 1rpx;
+}
+
+.change-to {
+  display: flex;
+  align-items: center;
+  margin-top: 14rpx;
+}
+
+.change-to-label {
+  font-size: 21rpx;
+  color: #71767f;
+  margin-right: 14rpx;
+}
+
+.change-to-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  letter-spacing: 3rpx;
+}
+
+.change-judge {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: #15171c;
+  line-height: 1.8;
+}
+
+.change-tip {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 21rpx;
+  color: #a2a6ad;
+  line-height: 1.7;
+}
+
+.time-line {
+  margin-top: 22rpx;
+  text-align: center;
+  font-size: 21rpx;
+  color: #a2a6ad;
+}

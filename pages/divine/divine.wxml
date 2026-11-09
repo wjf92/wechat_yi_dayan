@@ -1,0 +1,135 @@
+<view class="page dpage">
+  <!-- 头部 -->
+  <view class="dhead">
+    <text class="dh-t serif">大衍占筮</text>
+    <text class="dh-m">{{metaText}}</text>
+  </view>
+
+  <!-- 六爻记录带 -->
+  <view class="record">
+    <view class="rec {{item.cls}}" wx:for="{{yaoDots}}" wx:key="k">
+      <text class="rec-k">{{item.k}}</text>
+      <view class="rec-v">{{item.v}}</view>
+      <text class="rec-b" wx:if="{{item.bian}}">变</text>
+    </view>
+  </view>
+
+  <!-- 挂一 · 太极：起筮时方由席上拈出，此后十八变始终不动 -->
+  <view class="taiji {{taijiOn ? 'on' : ''}}">
+    <view class="tj-ring">
+      <view class="tj-ball"></view>
+    </view>
+    <view class="tj-txt">
+      <view class="tj-t">{{taijiOn ? '挂 1 策 · 太 极' : '五 十 策 列 席'}}</view>
+      <view class="tj-n">{{taijiOn ? '起筮取一，虚一不用 · 十八变皆不参与' : '太极未立 · 点「下一步」自席上拈出一策'}}</view>
+    </view>
+    <view class="tj-tag">{{taijiOn ? '不 动' : '待 拈'}}</view>
+  </view>
+
+  <!-- 主体：圆席 + 右侧三变柱 -->
+  <view class="dbody">
+    <view class="cwrap" style="width:{{dia}}px;height:{{dia}}px">
+      <!-- 球堆之外的左上角：实时显示席上现存策数（不含已离席归奇之策） -->
+      <view class="pile-tag">
+        <text class="pile-cap">在 席</text>
+        <text class="pile-n serif">{{pileCount}}</text>
+        <text class="pile-u">策</text>
+      </view>
+
+      <view
+        class="circl"
+        id="ballField"
+        style="width:{{dia}}px;height:{{dia}}px"
+        bindtouchstart="onTouchStart"
+        catchtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+      >
+        <!-- 球：揲四时一颗都不动，沿用分二那份落点 -->
+        <view
+          class="ball {{item.cls}}"
+          wx:for="{{balls}}"
+          wx:key="id"
+          style="left:{{item.x}}px;top:{{item.y}}px;width:{{ballSize}}px;height:{{ballSize}}px;transition-duration:{{item.d}}ms;transition-delay:{{item.dl}}ms;animation-delay:{{item.ad}}ms"
+        ></view>
+
+        <!-- 你画的线 + 手绘圈（同层渲染画布，事件冒泡给外层） -->
+        <canvas
+          type="2d"
+          id="ink"
+          class="ink"
+          style="width:{{dia}}px;height:{{dia}}px"
+          bindtouchstart="onTouchStart"
+          catchtouchmove="onTouchMove"
+          bindtouchend="onTouchEnd"
+        ></canvas>
+
+        <view class="dtag dtag-l {{splitDone ? 'on' : ''}}">左 <text class="dtag-b">{{leftCount}}</text></view>
+        <view class="dtag dtag-r {{splitDone ? 'on' : ''}}">右 <text class="dtag-b">{{rightCount}}</text> · 挂 1</view>
+
+        <!-- 成爻 -->
+        <view class="yao-calc" wx:if="{{stepKey === 'yao'}}">
+          <text class="yc-cap">三 变 余 策</text>
+          <text class="yc-eq">{{yaoRemain}} ÷ 4 ＝</text>
+          <text class="yc-num serif">{{yaoNum}}</text>
+          <view class="yao-line {{yaoYang ? 'yang' : 'yin'}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 三变柱：柱内自上而下「挂 1 ｜ 右余 ｜ 左余」，段间留空当 -->
+    <view class="pillars">
+      <view class="pil" wx:for="{{pillars}}" wx:key="lab">
+        <text class="pil-lab">{{item.lab}}</text>
+        <text class="pil-num" style="color:{{item.c}}">{{item.val}}</text>
+        <view class="pil-dots">
+          <view
+            class="bdot {{item.done ? 'out' : 'g'}} {{d.gap ? 'gap' : ''}}"
+            wx:for="{{item.dots}}"
+            wx:for-item="d"
+            wx:key="i"
+          ></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 步骤名（放在步骤条上方，字号加大） -->
+  <view class="stpname">{{stepName}}</view>
+
+  <!-- 步骤轨（首爻八步，太极既立后七步） -->
+  <view class="steps">
+    <block wx:for="{{rails}}" wx:key="i">
+      <view class="stp {{item.cls}}">{{item.n}}</view>
+      <view class="stp-line {{item.lineCls}}" wx:if="{{item.line}}"></view>
+    </block>
+  </view>
+
+  <!-- 底部 -->
+  <view class="dbot">
+    <text class="dhint">{{hint}}</text>
+
+    <view class="chips" wx:if="{{chips.length}}">
+      <view class="chip {{item.dark ? 'dark-chip' : ''}} {{item.sum ? 'sum' : ''}}" wx:for="{{chips}}" wx:key="t">{{item.t}}</view>
+    </view>
+
+    <view class="formula" wx:if="{{stepKey === 'count'}}">
+      <text class="f-cap">本 变 余 策</text>
+      <text class="f-eq">{{formulaText}}</text>
+      <text class="f-note">{{formulaNote}}</text>
+    </view>
+
+    <button class="btn {{btnWait ? 'wait' : ''}}" bindtap="onNext">{{btnText}}</button>
+
+    <view class="lock" wx:if="{{stepKey === 'hang'}}">此步不可跳过 —— 须你亲自点「下一步」，太极之策方自席上拈出</view>
+
+    <view class="relink" wx:if="{{stepKey === 'split' && splitDone}}" bindtap="onRedraw">重新划线</view>
+  </view>
+
+  <!-- 飞球层：余策离席飞向柱中，落定后收成柱内小黑点 -->
+  <view
+    class="flyball {{item.land ? 'land' : ''}}"
+    wx:for="{{fly}}"
+    wx:key="id"
+    style="left:{{item.x}}px;top:{{item.y}}px;width:{{item.size}}px;height:{{item.size}}px;transform:translate({{item.tx}}px,{{item.ty}}px) scale({{item.sc}});transition-duration:{{item.d}}ms;transition-delay:{{item.dl}}ms"
+  ></view>
+</view>

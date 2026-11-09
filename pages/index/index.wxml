@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title serif">大衍占筮</text>
+    <text class="hero-sub">刘君祖《易断全书》筮法 · 数字化</text>
+  </view>
+
+  <view class="illu">
+    <view class="fly-ball"></view>
+    <view class="fly-arrow"></view>
+    <view class="mini-field">
+      <view
+        class="ball"
+        wx:for="{{balls}}"
+        wx:key="id"
+        style="left:{{item.x}}rpx;top:{{item.y}}rpx;width:{{ballSize}}rpx;height:{{ballSize}}rpx"
+      ></view>
+    </view>
+    <text class="illu-cap">大衍之数五十，其用四十有九 · 拈出一枚不用</text>
+  </view>
+
+  <view class="ritual-card">
+    <text class="ritual-line">请闭目凝神</text>
+    <text class="ritual-strong serif">心念所问之事</text>
+    <text class="ritual-line">而后起卦</text>
+  </view>
+
+  <view class="tips">分二由你亲手划线，挂一由程序代行</view>
+  <view class="tips sub">太极既定：首爻八步，其后每爻七步 · 每步须你亲自推进</view>
+
+  <button class="btn" bindtap="startDivine">开 始 起 卦</button>
+  <button class="btn ghost" bindtap="goHistory">查 看 历 史</button>
+</view>

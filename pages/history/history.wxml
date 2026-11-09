@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="sec-title serif">占 例</view>
+  <view class="rule"></view>
+
+  <block wx:if="{{empty}}">
+    <view class="empty">
+      <text class="empty-icon">○</text>
+      <text class="empty-title">尚无占例</text>
+      <text class="empty-desc">起一卦并保存后，可在此回看</text>
+      <button class="btn" bindtap="onBack">开 始 起 卦</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view
+      class="item"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onOpen"
+      bindlongpress="onDelete"
+    >
+      <view class="item-main">
+        <text class="item-name serif">{{item.name}}</text>
+        <text class="item-sub" wx:if="{{item.changedName}}">之卦 {{item.changedName}}</text>
+        <text class="item-sub" wx:else>六爻不变</text>
+      </view>
+      <view class="item-side">
+        <view class="seal-sm serif">{{item.shortName}}</view>
+        <text class="item-time">{{item.timeText}}</text>
+      </view>
+    </view>
+    <view class="img-note">点击查看详情 · 长按删除</view>
+    <button class="btn ghost" bindtap="onBack">返 回 首 页</button>
+  </block>
+</view>
