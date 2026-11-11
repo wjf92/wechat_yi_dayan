@@ -1,24 +1,20 @@
-const hexagrams = require('../../utils/hexagrams.js');
+const duanzhan = require('../../utils/duanzhan.js');
 const store = require('../../utils/store.js');
 
-const LABELS = ['初', '二', '三', '四', '五', '上'];
-
+// 成卦结果页：断占总结（三行） / 本卦 / 变卦
+// 全部展示数据由 utils/duanzhan.js 从六爻营数重算，历史占例无需迁移
 Page({
   data: {
     ready: false,
     fromHistory: false,
     saved: false,
-    lines: [],
-    hexName: '',
-    shortName: '',
-    upper: '',
-    lower: '',
-    judgment: '',
-    hasChange: false,
-    changeText: '',
-    changedName: '',
-    changedJudgment: '',
-    timeText: ''
+    summaryLines: [],
+    ben: null,
+    bian: null,
+    timeText: '',
+    question: '',
+    asking: false,
+    questionInput: ''
   },
 
   onLoad: function (options) {
@@ -44,47 +40,47 @@ Page({
 
   render: function (session) {
     const values = session.values || [];
-    const hex = session.hex || hexagrams.buildHexagram(values);
-    const lines = [];
-    for (let i = 5; i >= 0; i--) {
-      const v = values[i];
-      const info = v === 6 ? { yang: false, symbol: '⚋' }
-        : v === 9 ? { yang: true, symbol: '⚊' }
-          : v === 8 ? { yang: false, symbol: '⚋' }
-            : { yang: true, symbol: '⚊' };
-      lines.push({
-        label: LABELS[i],
-        yang: info.yang,
-        changing: v === 6 || v === 9,
-        valueText: v + ' ' + info.symbol
-      });
-    }
-
-    const changed = session.changed;
+    const result = duanzhan.buildResult(values);
     this.setData({
       ready: true,
-      lines: lines,
-      hexName: hex.name,
-      shortName: hex.shortName,
-      upper: hex.upperSymbol + ' ' + hex.upper + '（上）',
-      lower: hex.lowerSymbol + ' ' + hex.lower + '（下）',
-      judgment: hex.judgment,
-      hasChange: !!changed,
-      changeText: (session.changeLabels || []).join('、'),
-      changedName: changed ? changed.name : '',
-      changedJudgment: changed ? changed.judgment : '',
-      timeText: store.formatTime(session.createdAt)
+      summaryLines: result.summaryLines,
+      ben: result.ben,
+      bian: result.bian,
+      timeText: store.formatTime(session.createdAt),
+      question: (session.question || '').trim()
     });
   },
 
+  // 保存前先问所占事项；用页面内弹层而不是 wx.showModal(editable)，
+  // 因为 Android WebView 默认不显示 prompt/confirm 类原生对话框。
   onSave: function () {
+    if (!this.session || this.data.saved) return;
+    this.setData({
+      asking: true,
+      questionInput: (this.session.question || '').trim()
+    });
+  },
+
+  onQuestionInput: function (e) {
+    this.setData({ questionInput: (e.detail && e.detail.value) || '' });
+  },
+
+  onCancelAsk: function () {
+    this.setData({ asking: false });
+  },
+
+  noop: function () {},
+
+  onConfirmAsk: function () {
     if (!this.session) return;
+    const q = (this.data.questionInput || '').trim();
+    this.session.question = q;
     const res = store.save(this.session);
     if (res.error) {
       wx.showToast({ title: '保存失败，请重试', icon: 'none' });
       return;
     }
-    this.setData({ saved: true });
+    this.setData({ asking: false, saved: true, question: q });
     wx.showToast({ title: '已存入占例', icon: 'success' });
   },
 

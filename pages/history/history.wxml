@@ -22,6 +22,7 @@
     >
       <view class="item-main">
         <text class="item-name serif">{{item.name}}</text>
+        <text class="item-q" wx:if="{{item.question}}">所占 · {{item.question}}</text>
         <text class="item-sub" wx:if="{{item.changedName}}">之卦 {{item.changedName}}</text>
         <text class="item-sub" wx:else>六爻不变</text>
       </view>

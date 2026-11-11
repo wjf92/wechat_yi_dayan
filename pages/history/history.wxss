@@ -43,12 +43,25 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 }
 
 .item-name {
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 3rpx;
+}
+
+.item-q {
+  display: block;
+  max-width: 100%;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #e0402f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-sub {

@@ -3,49 +3,133 @@
     <view class="sec-title serif">卦象生成</view>
     <view class="rule"></view>
 
-    <view class="hex">
-      <view class="hex-line" wx:for="{{lines}}" wx:key="label">
-        <text class="hex-label">{{item.label}}</text>
-        <view class="hex-bars">
-          <view class="bar {{item.changing ? 'changing' : ''}}" wx:if="{{item.yang}}"></view>
-          <view class="yin" wx:else>
-            <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
-            <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
+    <view class="card verdict">
+      <text class="verdict-k">断占总结</text>
+      <view class="vline {{item.last ? 'last' : ''}}" wx:for="{{summaryLines}}" wx:key="key">
+        <text class="vk">{{item.key}}</text>
+        <text class="vt serif">{{item.text}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-h">
+        <text class="card-h-t">本卦</text>
+        <text class="tag">{{ben.tag}}</text>
+      </view>
+      <view class="hex-head">
+        <view class="seal serif">{{ben.shortName}}</view>
+        <text class="hex-name serif">{{ben.name}}</text>
+      </view>
+      <view class="trigrams">{{ben.upper}} · {{ben.lower}}</view>
+      <view class="hr"></view>
+
+      <view class="hex">
+        <view class="hex-line {{item.isYi ? 'yi' : ''}}" wx:for="{{ben.lines}}" wx:key="label">
+          <text class="hex-label">{{item.label}}</text>
+          <view class="hex-bars">
+            <view class="bar {{item.changing ? 'changing' : ''}}" wx:if="{{item.yang}}"></view>
+            <view class="yin" wx:if="{{!item.yang}}">
+              <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
+              <view class="bar half {{item.changing ? 'changing' : ''}}"></view>
+            </view>
+          </view>
+          <text class="hex-val">{{item.valueText}}</text>
+          <view class="marks">
+            <text class="mk change" wx:if="{{item.changing}}">变</text>
+            <text class="mk yi" wx:if="{{item.isYi}}">宜</text>
+            <text class="mk main" wx:if="{{item.isMain}}">主变数</text>
           </view>
         </view>
-        <text class="hex-val">{{item.valueText}}</text>
+      </view>
+      <view class="legend">
+        <text>朱红＝变爻</text>
+        <text>虚线＝宜变之爻</text>
+        <text>主变数＝相值</text>
+      </view>
+
+      <text class="lbl">卦辞</text>
+      <text class="juan-text serif">{{ben.judgment}}</text>
+      <text class="lbl">爻辞</text>
+      <view class="ylist">
+        <view class="yline {{item.isMain ? 'main' : ''}}" wx:for="{{ben.yaoList}}" wx:key="title">
+          <text class="yp">{{item.title}}</text>
+          <text class="yc serif"><text class="prefix {{item.isRef ? 'ref' : ''}}" wx:if="{{item.prefix}}">{{item.prefix}}</text>{{item.text}}</text>
+        </view>
       </view>
     </view>
 
-    <view class="hex-head">
-      <view class="seal serif">{{shortName}}</view>
-      <text class="hex-name serif">{{hexName}}</text>
-    </view>
-    <view class="trigrams">{{upper}} · {{lower}}</view>
-
-    <view class="juan">
-      <text class="juan-label">卦辞</text>
-      <text class="juan-text serif">{{judgment}}</text>
-    </view>
-
-    <view class="change-card" wx:if="{{hasChange}}">
-      <text class="change-title">变爻：{{changeText}}</text>
-      <view class="change-to">
-        <text class="change-to-label">之卦</text>
-        <text class="change-to-name serif">{{changedName}}</text>
+    <view class="card">
+      <view class="card-h">
+        <text class="card-h-t">变卦</text>
+        <text class="tag">{{bian.tag}}</text>
       </view>
-      <text class="change-judge serif">{{changedJudgment}}</text>
-      <text class="change-tip">有变爻时，兼看本卦与之卦，以变爻爻辞为断。</text>
-    </view>
-    <view class="change-card" wx:else>
-      <text class="change-title">六爻皆不变</text>
-      <text class="change-tip">之卦即本卦，依本卦卦辞为断。</text>
+      <view class="empty" wx:if="{{bian.mode == 'none'}}">
+        <text>六爻皆静，之卦即本卦</text>
+        <text>依本卦卦辞卦象占断即可</text>
+      </view>
+      <block wx:if="{{bian.mode != 'none'}}">
+        <view class="subcard {{card.primary ? 'primary' : ''}} {{card.mute ? 'mute' : ''}}" wx:for="{{bian.cards}}" wx:for-item="card" wx:key="title">
+          <view class="subcard-h">
+            <text class="sub-t">{{card.title}}</text>
+            <text class="badge">{{card.badge}}</text>
+          </view>
+          <view class="subbody">
+            <view class="minihex">
+              <view class="mline" wx:for="{{card.miniLines}}" wx:key="key">
+                <view class="mbar full {{item.changed ? 'c' : ''}}" wx:if="{{item.yang}}"></view>
+                <view class="mbar-h" wx:if="{{!item.yang}}">
+                  <view class="mbar half {{item.changed ? 'c' : ''}}"></view>
+                  <view class="mbar half {{item.changed ? 'c' : ''}}"></view>
+                </view>
+              </view>
+            </view>
+            <view class="subtxt">
+              <text class="sub-nm serif">{{card.name}}</text>
+              <text class="slbl">卦辞</text>
+              <text class="sub-jc serif">{{card.judgment}}</text>
+            </view>
+          </view>
+          <text class="slbl">爻辞</text>
+          <view class="ylist">
+            <view class="yline {{item.changed ? 'chg' : ''}}" wx:for="{{card.yaoList}}" wx:key="title">
+              <text class="yp">{{item.title}}</text>
+              <text class="yc serif">{{item.text}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
     </view>
 
+    <view class="question-line" wx:if="{{question}}">
+      <text class="ql-k">所占事项</text>
+      <text class="ql-v serif">{{question}}</text>
+    </view>
     <view class="time-line">{{timeText}}</view>
 
     <button class="btn" wx:if="{{!saved}}" bindtap="onSave">保 存 占 例</button>
     <button class="btn ghost" bindtap="onRestart">重 新 起 卦</button>
     <button class="btn ghost" bindtap="onHistory">查 看 历 史</button>
   </block>
+
+  <!-- 保存所占事项：页面内弹层，小程序与 Android WebView 表现一致 -->
+  <view class="mask" wx:if="{{asking}}" catchtap="onCancelAsk">
+    <view class="dialog" catchtap="noop">
+      <text class="dlg-t serif">所占事项</text>
+      <text class="dlg-d">写下本次所问之事，保存后可在占例中回看</text>
+      <input
+        class="dlg-input"
+        value="{{questionInput}}"
+        placeholder="如：求职、出行、家宅……"
+        maxlength="40"
+        focus="{{asking}}"
+        confirm-type="done"
+        bindinput="onQuestionInput"
+        bindconfirm="onConfirmAsk"
+      />
+      <view class="dlg-btns">
+        <button class="dlg-btn ghost" catchtap="onCancelAsk">取 消</button>
+        <button class="dlg-btn" catchtap="onConfirmAsk">保 存</button>
+      </view>
+    </view>
+  </view>
 </view>

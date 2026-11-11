@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>成卦结果页 · 界面设计稿（精简版）</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#15171c; --muted:#71767f; --faint:#a2a6ad;
+  --line:#e8eaed; --line2:#d8dce0; --red:#e0402f; --red-soft:#fdeeeb; --ghost:#fafbfc;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#e9ebee;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;font-size:14px;line-height:1.6}
+.serif{font-family:"Songti SC","STSong","Noto Serif SC",serif}
+.topbar{background:#ffffff;border-bottom:1px solid var(--line2);padding:18px 28px;display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+.topbar h1{margin:0;font-size:17px;font-weight:600;letter-spacing:1px}
+.topbar .sub{color:var(--muted);font-size:12px;margin-left:4px}
+.scenes{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.scenes button{border:1px solid var(--line2);background:#fff;color:var(--muted);border-radius:999px;padding:6px 13px;font-size:12px;cursor:pointer}
+.scenes button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.wrap{display:flex;gap:28px;align-items:flex-start;padding:28px;flex-wrap:wrap}
+.phone{width:390px;height:840px;flex:0 0 390px;border:10px solid #1c1f24;border-radius:38px;background:var(--bg);overflow-y:auto;box-shadow:0 18px 40px rgba(21,23,28,.18)}
+.phone::-webkit-scrollbar{width:6px}.phone::-webkit-scrollbar-thumb{background:#c9ccd1;border-radius:6px}
+.status{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;color:var(--ink);background:#fff}
+.nav{height:46px;display:flex;align-items:center;justify-content:center;position:relative;background:#fff;border-bottom:1px solid var(--line)}
+.nav .back{position:absolute;left:16px;font-size:19px;color:var(--ink)}
+.nav b{font-size:15px;font-weight:600;letter-spacing:3px}
+.nav .info{position:absolute;right:16px;width:18px;height:18px;border:1px solid var(--line2);border-radius:50%;color:var(--faint);font-size:11px;text-align:center;line-height:16px}
+.screen{padding:14px 16px 30px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(21,23,28,.04)}
+.card-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card-h h2{margin:0;font-size:15px;font-weight:600;letter-spacing:2px}
+.card-h .tag{margin-left:auto;font-size:11px;color:var(--red);border:1px solid var(--red);border-radius:999px;padding:1px 8px}
+.verdict{background:var(--red-soft);border:1px solid #f6d9d3;border-left:3px solid var(--red);border-radius:0 14px 14px 0}
+.verdict .k{font-size:11px;color:var(--red);letter-spacing:2px}
+.vlines{margin-top:8px}
+.vline{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed #f0d6d1;font-size:13.5px;line-height:1.85}
+.vline:last-child{border-bottom:none;padding-bottom:1px}
+.vline .vk{flex:0 0 30px;font-size:11px;color:var(--red);letter-spacing:1px;padding-top:2px}
+.vline .vt{flex:1;letter-spacing:.3px}
+.vline.last .vt{color:var(--red);font-weight:600}
+.hexname{display:flex;align-items:center;gap:10px;margin:2px 0 4px}
+.seal{width:42px;height:42px;border-radius:9px;background:var(--red);color:#fff;font-size:14px;text-align:center;padding:5px 3px;line-height:1.15;box-shadow:0 3px 8px rgba(224,64,47,.28)}
+.hexname .nm{font-size:23px;font-weight:700;letter-spacing:3px}
+.hexname .tri{margin-left:auto;font-size:11px;color:var(--muted);text-align:right;line-height:1.5}
+.hr{height:1px;background:var(--line);margin:12px 0}
+.hex{display:flex;flex-direction:column;gap:5px;margin:12px 0 8px}
+.yao{display:flex;align-items:center;height:26px;padding:0 6px;border-radius:6px;position:relative}
+.yao.yi{background:#f7f8fa;box-shadow:inset 3px 0 0 var(--ink)}
+.yao .lab{width:22px;text-align:center;font-size:12px;color:var(--muted);font-family:"Songti SC",serif}
+.bars{width:140px;display:flex;justify-content:center;align-items:center;gap:0}
+.seg{height:9px;background:var(--ink);border-radius:2px;display:block}
+.seg.full{width:140px}
+.seg.half{width:62px;margin:0 4px}
+.seg.chg{background:var(--red)}
+.yao .val{width:26px;text-align:right;font-size:11px;color:var(--muted)}
+.marks{margin-left:8px;display:flex;gap:4px;align-items:center}
+.mk{font-size:10px;line-height:16px;padding:0 5px;border-radius:4px;white-space:nowrap}
+.mk.change{color:var(--red);background:var(--red-soft)}
+.mk.yi{color:var(--ink);border:1px dashed var(--ink);background:#fff}
+.mk.main{background:var(--red);color:#fff;font-weight:600}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--faint);margin:0 0 4px}
+.legend i{display:inline-block;width:12px;height:8px;background:var(--red);border-radius:2px;vertical-align:middle;margin-right:3px}
+.legend u{display:inline-block;width:10px;height:10px;border:1px dashed var(--ink);vertical-align:middle;margin-right:3px;text-decoration:none}
+.lbl{font-size:11px;color:var(--red);letter-spacing:3px;margin:12px 0 4px}
+.txt{font-size:14px;line-height:1.9;letter-spacing:.5px}
+.ylist{margin-top:4px}
+.yline{display:flex;gap:9px;padding:6px 8px;border-bottom:1px solid var(--line);border-radius:6px;font-size:12.5px;line-height:1.8}
+.yline:last-child{border-bottom:none}
+.yline .yp{flex:0 0 32px;color:var(--muted);font-family:"Songti SC",serif}
+.yline .yc{flex:1;color:#3a3d44}
+.yline.main{background:var(--red-soft)}
+.yline.main .yp{color:var(--red)}
+.yline.main .yc{color:var(--ink)}
+.yline.chg .yp{color:var(--red)}
+.yline.chg .yc{color:var(--ink)}
+.prefix{font-weight:600;color:var(--red);margin-right:5px}
+.prefix.ref{font-weight:400;color:var(--faint)}
+.subcard{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--ghost)}
+.subcard:last-child{margin-bottom:0}
+.subcard.primary{border-color:var(--red);background:#fff}
+.subcard.mute{opacity:.72}
+.subcard-h{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.subcard-h .t{font-size:13px;font-weight:600}
+.badge{font-size:10px;border-radius:4px;padding:1px 6px;white-space:nowrap;border:1px solid var(--line2);color:var(--muted)}
+.badge.red{background:var(--red);border-color:var(--red);color:#fff}
+.badge.ink{background:var(--ink);border-color:var(--ink);color:#fff}
+.subbody{display:flex;gap:12px;align-items:flex-start}
+.minihex{width:74px;flex:0 0 74px;display:flex;flex-direction:column;gap:3px;padding-top:2px}
+.minihex .mseg{height:5px;background:var(--ink);border-radius:1px;align-self:center}
+.minihex .mseg.f{width:70px}
+.minihex .mseg.h{width:30px;background:transparent;position:relative}
+.minihex .mseg.h::before,.minihex .mseg.h::after{content:"";position:absolute;top:0;width:30px;height:5px;background:var(--ink);border-radius:1px}
+.minihex .mseg.h::before{left:-20px}.minihex .mseg.h::after{left:18px}
+.minihex .mseg.c{background:var(--red)}
+.minihex .mseg.h.c::before,.minihex .mseg.h.c::after{background:var(--red)}
+.subtxt{flex:1;min-width:0}
+.subtxt .nm{font-size:17px;font-weight:600;letter-spacing:1px}
+.slbl{font-size:10px;color:var(--red);letter-spacing:2px;margin:7px 0 2px}
+.subtxt .jc{font-size:12px;line-height:1.8}
+.empty{text-align:center;padding:24px 12px;color:var(--faint);font-size:12px;line-height:1.9;background:var(--ghost);border:1px dashed var(--line2);border-radius:12px}
+.foot{text-align:center;color:var(--faint);font-size:11px;margin:16px 0 10px}
+.btn{height:44px;line-height:44px;border-radius:14px;background:var(--red);color:#fff;text-align:center;font-size:14px;letter-spacing:5px;margin-top:10px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink);letter-spacing:4px}
+.notes{width:400px;flex:1 1 360px;min-width:320px}
+.notes .card{padding:18px}
+.notes h3{margin:0 0 10px;font-size:14px;font-weight:600;letter-spacing:1px}
+.notes h3 span{color:var(--red);margin-right:6px}
+.notes p{font-size:12px;color:var(--muted);line-height:1.85;margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+th,td{border:1px solid var(--line);padding:6px 7px;text-align:left;vertical-align:top;line-height:1.6}
+th{background:var(--ghost);color:var(--muted);font-weight:500}
+td b{font-weight:600}
+code{background:var(--ghost);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:11px}
+.tpl{background:var(--red-soft);border-left:3px solid var(--red);padding:10px 12px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:2;margin:10px 0}
+.tpl div{display:flex;gap:9px}
+.tpl b{flex:0 0 30px;color:var(--red);font-weight:600;font-size:11px}
+.tpl span{flex:1}
+.warn{background:var(--red-soft);border-left:3px solid var(--red);padding:9px 11px;border-radius:0 8px 8px 0;font-size:12px;line-height:1.8;margin-top:10px}
+.footnote{font-size:11px;color:var(--faint);margin-top:14px;line-height:1.8}
+@media(max-width:900px){.wrap{padding:14px}.phone{width:100%;flex:1 1 100%;height:760px}.notes{width:100%}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>成卦结果页 · 界面设计稿</h1>
+  <span class="sub">依据《刘君祖易断全书 · 断占总论》｜精简版｜仅设计稿，未改动小程序代码</span>
+  <div class="scenes" id="scenes"></div>
+</div>
+
+<div class="wrap">
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>大衍 · 六爻齐备</span></div>
+    <div class="nav"><span class="back">‹</span><b>卦象生成</b><span class="info">i</span></div>
+    <div class="screen" id="screen"></div>
+  </div>
+
+  <div class="notes">
+    <div class="card">
+      <h3><span>01</span>精简后的三段结构</h3>
+      <p>去掉了数据 chips、营数公式行、参考依据标签、独立「主断爻辞／参考爻辞」卡片、六爻折叠、变卦区大段模式说明。整页只剩三个卡片：</p>
+      <table>
+        <tr><th>区段</th><th>内容</th></tr>
+        <tr><td><b>① 总结</b></td><td>一张结论卡，内部分三行：动爻说明 / 宜变之爻 / 占断结论</td></tr>
+        <tr><td><b>② 本卦</b></td><td>卦象（带标记）＋ 卦辞 ＋ <b>六爻爻辞全文</b>，主断／参考用括号标在爻辞前</td></tr>
+        <tr><td><b>③ 变卦</b></td><td>一至两张之卦卡，每张含小卦象、卦名、<b>完整卦辞＋六爻爻辞全文</b></td></tr>
+      </table>
+      <p style="margin-top:10px">本卦与变卦的爻辞用同一套清单样式，读法一致；变卦不再只列「对应爻辞」，避免断占时要另行翻书。</p>
+    </div>
+
+    <div class="card">
+      <h3><span>02</span>总结区的三行句式</h3>
+      <p>结论卡内固定三行，每行一个行首标签，变量只由 <code>values</code> 算出，不需要人工撰写：</p>
+      <div class="tpl serif">
+        <div><b>动爻</b><span>动爻数量为 2，分别为九四、九五</span></div>
+        <div><b>宜变</b><span>卦之营数为 50，算得宜变之爻为九五，宜变之爻为动爻</span></div>
+        <div><b>结论</b><span>以本卦九五爻辞为主断，亦应参考变卦的卦辞</span></div>
+      </div>
+      <table>
+        <tr><th>行</th><th>句段</th><th>取值</th></tr>
+        <tr><td>1</td><td>动爻数量／名称</td><td>营数为 6、9 的爻数；按「初九、九二…上六」称呼</td></tr>
+        <tr><td>2</td><td>营数 → 宜变之爻 → 相值</td><td><code>S = Σ六爻营数</code>；<code>r = 55 − S</code> 12 步循环数爻得爻题；判定是否为动爻</td></tr>
+        <tr><td>3</td><td>主断结论</td><td>按动爻数与相值结果选：本卦某爻辞／本卦卦辞／本卦与之卦合参／之卦卦辞</td></tr>
+      </table>
+      <p>三行是同一张卡里的行，不是三张卡；第三行朱红加粗，作为「主断结论」的落点。静卦特例：第二行写「不必起天地之数，故无宜变之爻可算」。</p>
+    </div>
+
+    <div class="card">
+      <h3><span>03</span>爻辞内联标注</h3>
+      <table>
+        <tr><th>位置</th><th>标注</th><th>样式</th></tr>
+        <tr><td>本卦 · 主断爻</td><td><b>（主断）</b></td><td>朱红加粗，整行淡红底</td></tr>
+        <tr><td>本卦 · 未相值动爻</td><td>（参考）</td><td>浅灰小字</td></tr>
+        <tr><td>变卦 · 新变出的爻</td><td>无文字标注</td><td>爻题朱红，与卦象里的朱红爻画对应</td></tr>
+      </table>
+      <p>两处的六爻爻辞都一次列全、不再折叠，也不另开卡重复主断爻辞。</p>
+    </div>
+
+    <div class="card">
+      <h3><span>04</span>卦象标记（保留）</h3>
+      <table>
+        <tr><th>标记</th><th>视觉</th><th>含义</th></tr>
+        <tr><td>变爻</td><td>朱红实心爻画 ＋「变」</td><td>九／六，主观变动意向</td></tr>
+        <tr><td>宜变之爻</td><td>该行浅灰底＋墨黑虚线＋「宜」虚框</td><td>天地之数算出的客观位置</td></tr>
+        <tr><td>主变数</td><td>朱红「主变数」胶囊</td><td>两者相值，该爻为主断依据</td></tr>
+      </table>
+      <p>仍只用朱红一种强调色；变卦小卦象中，新变出的爻画也用朱红。</p>
+    </div>
+
+    <div class="card">
+      <h3><span>05</span>变卦区的展示规则</h3>
+      <table>
+        <tr><th>情形</th><th>展示</th></tr>
+        <tr><td>动爻 0</td><td>一句空态说明，不另列卦</td></tr>
+        <tr><td>动爻 1，相值</td><td>一张之卦卡，注明「单变＝齐变」</td></tr>
+        <tr><td><b>动爻 2～3，相值</b></td><td><b>分别展示</b>单爻变卦＋多爻齐变卦</td></tr>
+        <tr><td>动爻 1～2，不相值</td><td>仅齐变之卦，灰态「仅作参考」</td></tr>
+        <tr><td>动爻 3，不相值</td><td>齐变之卦标「与本卦合参」</td></tr>
+        <tr><td>动爻 4～6</td><td>齐变之卦标「主断依据」，红边强调</td></tr>
+      </table>
+      <p>每张卡都给全卦辞＋六爻爻辞；卡片标题只写「单爻变卦／多爻齐变卦」，变化范围放进右侧小标签。之卦同样是 64 卦之一，按卦序号从同一张 384 爻辞表取六条即可，不需要另建数据。</p>
+    </div>
+
+    <div class="card">
+      <h3><span>06</span>落地前要补的两处</h3>
+      <p><b>计算</b>：<code>utils</code> 层加纯函数，由 <code>values</code> 求出 <code>S / r / yiIndex / matched / singleHex / allHex / mode</code> 与三行结论文本。旧占例只存 <code>values</code>，全部可重算，无需数据迁移。</p>
+      <p><b>数据</b>：现有 <code>hexagrams.js</code> 只有 64 卦名与卦辞，<b>缺 384 爻爻辞</b>；本卦、单爻变卦、多爻齐变卦的完整爻辞都要从这张表取。设计稿中的爻辞为示例文本，落地前需补齐并按卦序号＋爻位索引。</p>
+      <div class="warn">设计稿里的爻辞与卦辞用于验证版面，不参与占断计算；结论只由营数、宜变之爻位、动爻数三者推出。</div>
+    </div>
+    <div class="footnote">设计稿文件：docs/成卦结果页_界面设计稿.html　｜　对应页面：pages/result/result　｜　顶部按钮可切换 6 种典型占例，验证全部展示模式。</div>
+  </div>
+</div>
+
+<script>
+var LABELS = ['初','二','三','四','五','上'];
+var NUM = {6:'六',7:'七',8:'八',9:'九'};
+var SCENES = [
+  {
+    id:'dual', tab:'二爻变·相值（主场景）',
+    values:[8,8,8,9,9,8], hexName:'泽地萃', seal:'萃', tri:'兑上 · 坤下',
+    judgment:'亨。王假有庙。利见大人，亨，利贞。用大牲吉。利有攸往。',
+    yaos:['有孚不终，乃乱乃萃，若号，一握为笑，勿恤，往无咎。','引吉，无咎，孚乃利用禴。','萃如嗟如，无攸利，往无咎，小吝。','大吉，无咎。','萃有位，无咎。匪孚，元永贞，悔亡。','赍咨涕洟，无咎。'],
+    yi:4, S:50, r:5, matched:true, main:4, ref:[3],
+    lines:[
+      '动爻数量为2，分别为九四、九五',
+      '卦之营数为50，算得宜变之爻为九五，宜变之爻为动爻',
+      '以本卦九五爻辞为主断，亦应参考变卦的卦辞'
+    ],
+    mode:'dual',
+    single:{name:'雷地豫', seal:'豫', judgment:'利建侯行师。', from:'仅九五变',
+      yaos:['鸣豫，凶。','介于石，不终日，贞吉。','盱豫，悔；迟有悔。','由豫，大有得。勿疑，朋盍簪。','贞疾，恒不死。','冥豫成，有渝无咎。']},
+    all:{name:'坤为地', seal:'坤', judgment:'元亨，利牝马之贞。君子有攸往，先迷后得主。利西南得朋，东北丧朋。安贞吉。', from:'四、五爻齐变',
+      yaos:['履霜，坚冰至。','直方大，不习无不利。','含章可贞，或从王事，无成有终。','括囊，无咎无誉。','黄裳元吉。','龙战于野，其血玄黄。']}
+  },
+  {
+    id:'none', tab:'六爻皆不变',
+    values:[7,8,7,8,8,8], hexName:'地火明夷', seal:'明夷', tri:'坤上 · 离下',
+    judgment:'利艰贞。',
+    yaos:['明夷于飞，垂其翼。君子于行，三日不食。有攸往，主人有言。','明夷，夷于左股，用拯马壮，吉。','明夷于南狩，得其大首，不可疾贞。','入于左腹，获明夷之心，于出门庭。','箕子之明夷，利贞。','不明晦，初登于天，后入于地。'],
+    yi:3, S:46, r:9, matched:false, main:-1, ref:[],
+    lines:[
+      '动爻数量为0，六爻皆七、八而无变爻',
+      '不必起天地之数，故无宜变之爻可算',
+      '直接以本卦卦辞卦象占断'
+    ],
+    mode:'none'
+  },
+  {
+    id:'merged', tab:'一爻变·相值',
+    values:[6,8,7,7,7,8], hexName:'泽山咸', seal:'咸', tri:'兑上 · 艮下',
+    judgment:'亨，利贞。取女吉。',
+    yaos:['咸其拇。','咸其腓，凶，居吉。','咸其股，执其随，往吝。','贞吉悔亡，憧憧往来，朋从尔思。','咸其脢，无悔。','咸其辅颊舌。'],
+    yi:0, S:43, r:12, matched:true, main:0, ref:[],
+    lines:[
+      '动爻数量为1，为初六',
+      '卦之营数为43，算得宜变之爻为初六，宜变之爻为动爻',
+      '以本卦初六爻辞为主断，亦应参考变卦的卦辞'
+    ],
+    mode:'merged',
+    all:{name:'泽火革', seal:'革', judgment:'己日乃孚。元亨利贞，悔亡。', from:'初六变（单变＝齐变）',
+      yaos:['巩用黄牛之革。','己日乃革之，征吉，无咎。','征凶，贞厉。革言三就，有孚。','悔亡，有孚改命，吉。','大人虎变，未占有孚。','君子豹变，小人革面。征凶，居贞吉。']}
+  },
+  {
+    id:'reference', tab:'二爻变·不相值',
+    values:[9,8,7,9,8,7], hexName:'离为火', seal:'离', tri:'离上 · 离下',
+    judgment:'利贞，亨。畜牝牛，吉。',
+    yaos:['履错然，敬之无咎。','黄离，元吉。','日昃之离，不鼓缶而歌，则大耋之嗟，凶。','突如其来如，焚如，死如，弃如。','出涕沱若，戚嗟若，吉。','王用出征，有嘉折首，获匪其丑，无咎。'],
+    yi:5, S:48, r:7, matched:false, main:-1, ref:[0,3],
+    lines:[
+      '动爻数量为2，分别为初九、九四',
+      '卦之营数为48，算得宜变之爻为上九，此位为静爻、两动爻皆未相值',
+      '以本卦卦辞卦象为主断，动爻爻辞仅作意向参考'
+    ],
+    mode:'reference',
+    all:{name:'艮为山', seal:'艮', judgment:'艮其背，不获其身；行其庭，不见其人。无咎。', from:'初、四爻齐变',
+      yaos:['艮其趾，无咎，利永贞。','艮其腓，不拯其随，其心不快。','艮其限，列其夤，厉薰心。','艮其身，无咎。','艮其辅，言有序，悔亡。','敦艮，吉。']}
+  },
+  {
+    id:'contest', tab:'三爻变·贞悔相争',
+    values:[9,9,9,8,7,8], hexName:'水天需', seal:'需', tri:'坎上 · 乾下',
+    judgment:'有孚，光亨，贞吉。利涉大川。',
+    yaos:['需于郊，利用恒，无咎。','需于沙，小有言，终吉。','需于泥，致寇至。','需于血，出自穴。','需于酒食，贞吉。','入于穴，有不速之客三人来，敬之终吉。'],
+    yi:4, S:50, r:5, matched:false, main:-1, ref:[0,1,2],
+    lines:[
+      '动爻数量为3，分别为初九、九二、九三',
+      '卦之营数为50，算得宜变之爻为九五，宜变之爻非动爻',
+      '可变与不变各半而贞悔相争，以本卦与之卦卦辞卦象合参'
+    ],
+    mode:'contest',
+    all:{name:'水地比', seal:'比', judgment:'吉。原筮，元永贞，无咎。不宁方来，后夫凶。', from:'下卦三爻齐变',
+      yaos:['有孚比之，无咎。有孚盈缶，终来有它吉。','比之自内，贞吉。','比之匪人。','外比之，贞吉。','显比，王用三驱，失前禽，邑人不诫，吉。','比之无首，凶。']}
+  },
+  {
+    id:'primary', tab:'四爻变·之卦主断',
+    values:[6,9,9,8,9,7], hexName:'巽为风', seal:'巽', tri:'巽上 · 巽下',
+    judgment:'小亨。利有攸往，利见大人。',
+    yaos:['进退，利武人之贞。','巽在床下，用史巫纷若，吉，无咎。','频巽，吝。','悔亡，田获三品。','贞吉悔亡，无不利。无初有终。先庚三日，后庚三日，吉。','巽在床下，丧其资斧，贞凶。'],
+    yi:5, S:48, r:7, matched:false, main:-1, ref:[0,1,2,4],
+    lines:[
+      '动爻数量为4，分别为初六、九二、九三、九五',
+      '卦之营数为48，算得宜变之爻为上九，宜变之爻非动爻',
+      '动爻过半，以四爻齐变之卦的卦辞卦象为主断'
+    ],
+    mode:'primary',
+    all:{name:'山雷颐', seal:'颐', judgment:'贞吉。观颐，自求口实。', from:'初、二、三、五爻齐变',
+      yaos:['舍尔灵龟，观我朵颐，凶。','颠颐，拂经，于丘颐，征凶。','拂颐，贞凶。十年勿用，无攸利。','颠颐，吉。虎视眈眈，其欲逐逐，无咎。','拂经，居贞吉，不可涉大川。','由颐，厉吉，利涉大川。']}
+  }
+];
+
+function bitsOf(values, flip){
+  return values.map(function(v,i){
+    var yang = (v===7||v===9);
+    if(flip && flip.indexOf(i)>=0) yang = !yang;
+    return yang;
+  });
+}
+function yaoRowHtml(bit, i, s){
+  var changing = (s.values[i]===6||s.values[i]===9);
+  var isYi = (s.yi===i);
+  var isMain = (s.main===i);
+  var bars = bit
+    ? '<span class="seg full'+(changing?' chg':'')+'"></span>'
+    : '<span class="seg half'+(changing?' chg':'')+'"></span><span class="seg half'+(changing?' chg':'')+'"></span>';
+  var marks = '';
+  if(changing) marks += '<span class="mk change">变</span>';
+  if(isYi) marks += '<span class="mk yi">宜</span>';
+  if(isMain) marks += '<span class="mk main">主变数</span>';
+  return '<div class="yao'+(isYi?' yi':'')+'">'
+    + '<span class="lab">'+LABELS[i]+'</span>'
+    + '<span class="bars">'+bars+'</span>'
+    + '<span class="val">'+NUM[s.values[i]]+'</span>'
+    + '<span class="marks">'+marks+'</span></div>';
+}
+function hexHtml(bits, flip){
+  var out='';
+  for(var i=5;i>=0;i--){
+    var cls = (bits[i]?'f':'h') + (flip && flip.indexOf(i)>=0 ? ' c' : '');
+    out += '<span class="mseg '+cls+'"></span>';
+  }
+  return '<div class="minihex">'+out+'</div>';
+}
+function changeBitsOf(s){ return s.values.map(function(v,i){return (v===6||v===9)?i:-1;}).filter(function(i){return i>=0;}); }
+function posLabel(i, yang){
+  var n = yang ? '九' : '六';
+  if(i===0) return '初'+n;
+  if(i===5) return '上'+n;
+  return n+LABELS[i];
+}
+
+/* 之卦卡：小卦象 + 卦名 + 完整卦辞 + 六爻爻辞全文 */
+function subCardHtml(s, kind, flip, forceMute){
+  var d = s[kind];
+  if(!d) return '';
+  var bits = bitsOf(s.values, flip);
+  var primary = (s.mode==='primary' && kind==='all');
+  var title = s.mode==='merged' ? '变卦' : (kind==='single' ? '单爻变卦' : '多爻齐变卦');
+  var badge = primary ? '<span class="badge red">主断依据</span>'
+    : s.mode==='contest' ? '<span class="badge ink">与本卦合参</span>'
+    : s.mode==='reference' ? '<span class="badge">仅作参考</span>'
+    : '<span class="badge">'+d.from+'</span>';
+  var ylist = '';
+  /* 爻辞自上而下：上→初（6→1），与卦象同序 */
+  for(var j=5;j>=0;j--){
+    var isChg = flip.indexOf(j)>=0;
+    ylist += '<div class="yline'+(isChg?' chg':'')+'">'
+      + '<span class="yp">'+posLabel(j,bits[j])+'</span>'
+      + '<span class="yc serif">'+d.yaos[j]+'</span></div>';
+  }
+  return '<div class="subcard'+(primary?' primary':'')+(forceMute?' mute':'')+'">'
+    + '<div class="subcard-h"><span class="t">'+title+'</span>'+badge+'</div>'
+    + '<div class="subbody">'+hexHtml(bits, flip)
+    + '<div class="subtxt"><div class="nm serif">'+d.name+'</div>'
+    + '<div class="slbl">卦辞</div><div class="jc serif">'+d.judgment+'</div></div></div>'
+    + '<div class="slbl">爻辞</div><div class="ylist">'+ylist+'</div></div>';
+}
+
+function render(s){
+  var changing = changeBitsOf(s);
+  var bits = bitsOf(s.values, null);
+  var hexRows = '';
+  for(var i=5;i>=0;i--) hexRows += yaoRowHtml(bits[i], i, s);
+
+  /* ① 总结：一张卡，三行 */
+  var lineKeys = ['动爻','宜变','结论'];
+  var vlines = s.lines.map(function(t,i){
+    return '<div class="vline'+(i===2?' last':'')+'"><span class="vk">'+lineKeys[i]+'</span>'
+      + '<span class="vt serif">'+t+'</span></div>';
+  }).join('');
+  var summary = '<div class="card verdict"><div class="k">断占总结</div>'
+    + '<div class="vlines">'+vlines+'</div></div>';
+
+  /* ② 本卦：卦象 + 卦辞 + 六爻爻辞（主断/参考内联标注） */
+  var ylist = '';
+  /* 爻辞自上而下：上→初（6→1），与卦象同序 */
+  for(var j=5;j>=0;j--){
+    var isMain = (j===s.main);
+    var isRef = (s.ref.indexOf(j)>=0);
+    var prefix = isMain ? '<span class="prefix">（主断）</span>'
+      : isRef ? '<span class="prefix ref">（参考）</span>' : '';
+    ylist += '<div class="yline'+(isMain?' main':'')+'">'
+      + '<span class="yp">'+posLabel(j,bits[j])+'</span>'
+      + '<span class="yc serif">'+prefix+s.yaos[j]+'</span></div>';
+  }
+  var ben = '<div class="card"><div class="card-h"><h2>本卦</h2><span class="tag">'+s.hexName+' · 贞</span></div>'
+    + '<div class="hexname"><div class="seal serif">'+s.seal+'</div><div class="nm serif">'+s.hexName+'</div><div class="tri">'+s.tri+'</div></div>'
+    + '<div class="hr"></div><div class="hex">'+hexRows+'</div>'
+    + '<div class="legend"><span><i></i>朱红＝变爻</span><span><u></u>虚线＝宜变之爻</span><span class="mk main" style="font-size:10px">主变数</span></div>'
+    + '<div class="lbl">卦辞</div><div class="txt serif">'+s.judgment+'</div>'
+    + '<div class="lbl">爻辞</div><div class="ylist">'+ylist+'</div></div>';
+
+  /* ③ 变卦：一至两张卡，各自完整卦辞与六爻爻辞 */
+  var bianBody;
+  if(s.mode==='none'){
+    bianBody = '<div class="empty">六爻皆静，之卦即本卦<br>依本卦卦辞卦象占断即可</div>';
+  } else if(s.mode==='dual'){
+    bianBody = subCardHtml(s,'single',[s.main],false) + subCardHtml(s,'all',changing,false);
+  } else {
+    bianBody = subCardHtml(s,'all',changing,s.mode==='reference');
+  }
+  var bianTag = s.mode==='none' ? '无变爻' : (s.mode==='dual' ? '须分看两卦' : '悔卦');
+  var bian = '<div class="card"><div class="card-h"><h2>变卦</h2><span class="tag">'+bianTag+'</span></div>'
+    + bianBody + '</div>';
+
+  var foot = '<div class="foot">丙午年 · 占例记录于起卦时刻</div>'
+    + '<div class="btn">保 存 占 例</div><div class="btn ghost">重 新 起 卦</div>';
+  document.getElementById('screen').innerHTML = summary + ben + bian + foot;
+  document.getElementById('screen').parentNode.scrollTop = 0;
+}
+
+var bar = document.getElementById('scenes');
+SCENES.forEach(function(s,i){
+  var b=document.createElement('button');
+  b.textContent=s.tab; b.className=(i===0?'on':'');
+  b.onclick=function(){
+    Array.prototype.forEach.call(bar.children,function(x){x.className='';});
+    b.className='on'; render(s);
+  };
+  bar.appendChild(b);
+});
+render(SCENES[0]);
+</script>
+</body>
+</html>

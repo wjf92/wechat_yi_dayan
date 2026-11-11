@@ -1,0 +1,5850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>成卦结果页 · 真实交互预览（小程序 / APK 共用）</title>
+<style>
+/* 模拟 WebView 运行时：root font-size 必须压过 app.css 的 html,body{font-size:.28rem}，
+   也压过 runtime.js 的 __setUnit() 内联字号，保证手机框内按 750rpx=390px 显示。 */
+html{font-size:52px !important}
+body{margin:0;background:#e9ebee;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+.bar-top{background:#fff;border-bottom:1px solid #d8dce0;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar-top h1{font-size:14px;font-weight:600;margin:0 10px 0 0;letter-spacing:1px}
+.bar-top .hint{font-size:12px;color:#71767f;margin-right:8px;width:100%;line-height:1.6}
+.bar-top button{border:1px solid #d8dce0;background:#fff;color:#71767f;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
+.bar-top button.on{background:#15171c;border-color:#15171c;color:#fff}
+.bar-top button.act{border-color:#e0402f;color:#e0402f}
+.bar-sep{width:100%;height:1px;background:#eceef1;margin:4px 0}
+.stage{padding:20px;display:flex;justify-content:center}
+#phone{width:390px;height:840px;border:10px solid #1c1f24;border-radius:38px;overflow-y:auto;background:#f5f6f8;box-shadow:0 18px 40px rgba(21,23,28,.18);position:relative}
+#phone::-webkit-scrollbar{width:6px}#phone::-webkit-scrollbar-thumb{background:#c9ccd1;border-radius:6px}
+#app{min-height:100%}
+/* WebView 基座：抹平浏览器默认样式，rpx 由 html font-size 提供 */
+html, body { margin:0; padding:0; width:100%; height:100%; overflow-x:hidden; }
+* { -webkit-tap-highlight-color: transparent; -webkit-user-select:none; user-select:none; }
+button { appearance:none; -webkit-appearance:none; border:0; border-radius:0;
+  background:transparent; color:inherit; font:inherit; line-height:normal;
+  padding:0; margin:0; text-align:center; }
+canvas { display:block; }
+.circl, .ink { touch-action:none; }
+#app { min-height:100%; }
+
+/* ===== app.wxss ===== */
+html, body {
+  min-height: 100%;
+  background: #f5f6f8;
+  color: #15171c;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 0.28rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 0.4rem 0.32rem 0.6rem;
+  box-sizing: border-box;
+}
+
+/* ============ 球 ============ */
+.ball {
+  position: absolute;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 0.03rem solid #15171c;
+  box-sizing: border-box;
+  box-shadow: 0 0.02rem 0.04rem rgba(21, 23, 28, 0.16);
+}
+
+.ball.dark {
+  background: #15171c;
+  border-color: #15171c;
+  box-shadow: 0 0.03rem 0.08rem rgba(21, 23, 28, 0.32);
+}
+
+.ball.hole {
+  background: transparent;
+  border: 0.03rem dashed #aab0b8;
+  box-shadow: none;
+}
+
+/* ============ 按钮 ============ */
+.btn {
+  margin-top: 0.28rem;
+  height: 0.96rem;
+  line-height: 0.96rem;
+  border-radius: 0.24rem;
+  font-size: 0.3rem;
+  letter-spacing: 0.08rem;
+  background: #e0402f;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 0.08rem 0.24rem rgba(224, 64, 47, 0.28);
+  padding: 0;
+}
+
+.btn::after {
+  border: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: #15171c;
+  border: 0.02rem solid #15171c;
+  box-shadow: none;
+}
+
+.btn.is-disabled {
+  background: #e7e9ec;
+  color: #a8adb4;
+  box-shadow: none;
+}
+
+.btn.ghost.is-disabled {
+  background: transparent;
+  color: #a8adb4;
+  border-color: #dcdfe4;
+}
+
+/* ============ 通用文字 ============ */
+.sec-title {
+  text-align: center;
+  font-size: 0.38rem;
+  font-weight: 700;
+  letter-spacing: 0.08rem;
+}
+
+.rule {
+  width: 0.72rem;
+  height: 0.06rem;
+  background: #e0402f;
+  border-radius: 0.04rem;
+  margin: 0.14rem auto 0.2rem;
+}
+
+.hint {
+  text-align: center;
+  font-size: 0.24rem;
+  color: #71767f;
+  line-height: 1.9;
+}
+
+.hint-sub {
+  display: block;
+  color: #9aa1a8;
+}
+
+.img-note {
+  margin-top: 0.16rem;
+  text-align: center;
+  font-size: 0.21rem;
+  color: #a2a6ad;
+  line-height: 1.7;
+}
+
+.card {
+  background: #ffffff;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.28rem;
+  padding: 0.26rem;
+  box-shadow: 0 0.02rem 0.06rem rgba(21, 23, 28, 0.04);
+}
+
+/* ============ 进度条 ============ */
+.stepbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafbfc;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.24rem;
+  padding: 0.14rem 0.22rem;
+  margin-bottom: 0.26rem;
+}
+
+.yaos {
+  display: flex;
+}
+
+.yao-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.1rem;
+  border-radius: 50%;
+  border: 0.02rem solid #dcdfe4;
+  color: #b6bac1;
+  font-size: 0.2rem;
+  line-height: 0.38rem;
+  text-align: center;
+  background: #ffffff;
+}
+
+.yao-dot.done {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+}
+
+.yao-dot.cur {
+  border: 0.03rem solid #e0402f;
+  color: #e0402f;
+  font-weight: 700;
+}
+
+.bians {
+  display: flex;
+  align-items: center;
+}
+
+.bian-text {
+  font-size: 0.22rem;
+  color: #71767f;
+  margin-right: 0.1rem;
+}
+
+.bian-seg {
+  width: 0.28rem;
+  height: 0.08rem;
+  border-radius: 0.06rem;
+  background: #dcdfe4;
+  margin-left: 0.06rem;
+}
+
+.bian-seg.on {
+  background: #15171c;
+}
+
+/* ============ 计数胶囊 ============ */
+.chips {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.2rem;
+}
+
+.chip {
+  border: 0.02rem solid #15171c;
+  border-radius: 9.99rem;
+  padding: 0.04rem 0.22rem;
+  font-size: 0.24rem;
+  margin: 0 0.08rem;
+  background: #ffffff;
+}
+
+.chip.sum {
+  background: #e0402f;
+  border-color: #e0402f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.chip.dark-chip {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+}
+
+/* ============ 锁定提示 ============ */
+.lock {
+  margin-top: 0.2rem;
+  font-size: 0.22rem;
+  line-height: 1.7;
+  color: #e0402f;
+  background: #fdeeeb;
+  border: 0.02rem dashed #e0402f;
+  border-radius: 0.2rem;
+  padding: 0.16rem 0.2rem;
+  text-align: center;
+}
+
+/* ===== pages/result/result.wxss ===== */
+/* pages/result/result.wxss —— 成卦结果页（断占总论三段式） */
+
+.card {
+  margin-bottom: 0.22rem;
+}
+
+.card-h {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.16rem;
+}
+
+.card-h-t {
+  font-size: 0.3rem;
+  font-weight: 600;
+  letter-spacing: 0.04rem;
+}
+
+.tag {
+  margin-left: auto;
+  font-size: 0.2rem;
+  color: #e0402f;
+  border: 0.02rem solid #e0402f;
+  border-radius: 9.99rem;
+  padding: 0.02rem 0.14rem;
+}
+
+/* ① 断占总结：一张卡，三行 */
+.verdict {
+  background: #fdeeeb;
+  border: 0.02rem solid #f6d9d3;
+  border-left: 0.06rem solid #e0402f;
+  border-radius: 0 0.28rem 0.28rem 0;
+  padding: 0.24rem 0.26rem;
+}
+
+.verdict-k {
+  display: block;
+  font-size: 0.21rem;
+  color: #e0402f;
+  letter-spacing: 0.04rem;
+  margin-bottom: 0.08rem;
+}
+
+.vline {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.1rem 0;
+  border-bottom: 0.02rem dashed #f0d6d1;
+}
+
+.vline.last {
+  border-bottom: none;
+  padding-bottom: 0.02rem;
+}
+
+.vk {
+  width: 0.56rem;
+  flex: none;
+  font-size: 0.21rem;
+  color: #e0402f;
+  letter-spacing: 0.01rem;
+  padding-top: 0.04rem;
+}
+
+.vt {
+  flex: 1;
+  font-size: 0.26rem;
+  line-height: 1.8;
+}
+
+.vline.last .vt {
+  color: #e0402f;
+  font-weight: 600;
+}
+
+/* ② 本卦：卦象与标记 */
+.hex-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.1rem;
+}
+
+.seal {
+  width: 0.72rem;
+  height: 0.72rem;
+  line-height: 1.15;
+  border-radius: 0.14rem;
+  background: #e0402f;
+  color: #ffffff;
+  font-size: 0.24rem;
+  text-align: center;
+  padding: 0.08rem 0.06rem;
+  box-sizing: border-box;
+  margin-right: 0.18rem;
+  box-shadow: 0 0.06rem 0.14rem rgba(224, 64, 47, 0.32);
+}
+
+.hex-name {
+  font-size: 0.42rem;
+  font-weight: 700;
+  letter-spacing: 0.06rem;
+}
+
+.trigrams {
+  margin-top: 0.1rem;
+  text-align: center;
+  font-size: 0.22rem;
+  color: #71767f;
+  letter-spacing: 0.02rem;
+}
+
+.hr {
+  height: 0.02rem;
+  background: #eceef1;
+  margin: 0.2rem 0;
+}
+
+.hex {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  margin-top: 0.16rem;
+}
+
+/* 六爻严格对齐：行宽固定为 100%，卦象按行中线绝对居中。
+   爻题、营数、标记分列左右两端且脱离文档流，不参与居中计算；
+   否则标记个数不同会让行宽随内容变化，居中后各爻横画左右漂移。 */
+.hex-line {
+  position: relative;
+  width: 100%;
+  height: 0.44rem;
+  min-height: 0.44rem;
+  margin-bottom: 0.08rem;
+  padding: 0 0.08rem;
+  border-radius: 0.08rem;
+  box-sizing: border-box;
+}
+
+.hex-line.yi {
+  background: #f7f8fa;
+  box-shadow: inset 0.04rem 0 0 #15171c;
+}
+
+.hex-label {
+  position: absolute;
+  left: 0.08rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.44rem;
+  text-align: right;
+  font-size: 0.24rem;
+  color: #71767f;
+  font-family: "Songti SC", "STSong", serif;
+}
+
+.hex-bars {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.4rem;
+  height: 0.18rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bar {
+  width: 2.4rem;
+  height: 0.18rem;
+  background: #15171c;
+  border-radius: 0.04rem;
+  flex: none;
+}
+
+.bar.half {
+  width: 1.08rem;
+}
+
+.bar.changing {
+  background: #e0402f;
+}
+
+.yin {
+  width: 2.4rem;
+  display: flex;
+  justify-content: space-between;
+  flex: none;
+}
+
+.hex-val {
+  position: absolute;
+  left: 0.66rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.9rem;
+  font-size: 0.21rem;
+  color: #15171c;
+}
+
+.marks {
+  position: absolute;
+  right: 0.08rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.mk {
+  font-size: 0.18rem;
+  line-height: 0.28rem;
+  padding: 0 0.06rem;
+  border-radius: 0.06rem;
+  margin-left: 0.04rem;
+  white-space: nowrap;
+  flex: none;
+}
+
+.mk.change {
+  color: #e0402f;
+  background: #fdeeeb;
+}
+
+.mk.yi {
+  color: #15171c;
+  border: 0.02rem dashed #15171c;
+  background: #ffffff;
+}
+
+.mk.main {
+  background: #e0402f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.18rem;
+  color: #a2a6ad;
+  margin: 0.1rem 0 0.04rem;
+}
+
+.legend text {
+  margin-right: 0.18rem;
+}
+
+/* 卦辞与六爻爻辞清单（本卦、变卦共用） */
+.lbl {
+  display: block;
+  font-size: 0.21rem;
+  color: #e0402f;
+  letter-spacing: 0.04rem;
+  margin: 0.2rem 0 0.08rem;
+}
+
+.juan-text {
+  display: block;
+  font-size: 0.28rem;
+  line-height: 1.9;
+  letter-spacing: 0.01rem;
+}
+
+.ylist {
+  margin-top: 0.06rem;
+}
+
+.yline {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.1rem 0.12rem;
+  border-bottom: 0.02rem solid #eceef1;
+  border-radius: 0.08rem;
+}
+
+.yline.main {
+  background: #fdeeeb;
+}
+
+.yp {
+  width: 0.62rem;
+  flex: none;
+  font-size: 0.23rem;
+  color: #71767f;
+  font-family: "Songti SC", "STSong", serif;
+}
+
+.yline.main .yp,
+.yline.chg .yp {
+  color: #e0402f;
+}
+
+.yc {
+  flex: 1;
+  font-size: 0.23rem;
+  line-height: 1.75;
+  color: #3a3d44;
+}
+
+.yline.main .yc {
+  color: #15171c;
+}
+
+.prefix {
+  color: #e0402f;
+  font-weight: 600;
+  margin-right: 0.06rem;
+}
+
+.prefix.ref {
+  color: #a2a6ad;
+  font-weight: 400;
+}
+
+/* ③ 变卦：一至两张之卦卡 */
+.empty {
+  text-align: center;
+  padding: 0.4rem 0.2rem;
+  color: #a2a6ad;
+  font-size: 0.22rem;
+  line-height: 1.9;
+  background: #fafbfc;
+  border: 0.02rem dashed #d8dce0;
+  border-radius: 0.2rem;
+}
+
+.empty text {
+  display: block;
+}
+
+.subcard {
+  background: #fafbfc;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.2rem;
+  padding: 0.2rem;
+  margin-bottom: 0.16rem;
+}
+
+.subcard.primary {
+  border-color: #e0402f;
+  background: #ffffff;
+}
+
+.subcard.mute {
+  opacity: 0.72;
+}
+
+.subcard-h {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.14rem;
+}
+
+.sub-t {
+  font-size: 0.25rem;
+  font-weight: 600;
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 0.19rem;
+  color: #71767f;
+  border: 0.02rem solid #d8dce0;
+  border-radius: 0.06rem;
+  padding: 0 0.1rem;
+  white-space: nowrap;
+}
+
+.subbody {
+  display: flex;
+  align-items: flex-start;
+}
+
+.minihex {
+  width: 1.2rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-right: 0.2rem;
+  padding-top: 0.04rem;
+}
+
+/* 每条爻行固定宽度，阴阳爻画都按同一中线居中 */
+.mline {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 0.16rem;
+  margin-bottom: 0.04rem;
+  box-sizing: border-box;
+}
+
+.mbar {
+  height: 0.1rem;
+  background: #15171c;
+  border-radius: 0.02rem;
+}
+
+.mbar.full {
+  width: 1.1rem;
+}
+
+.mbar.half {
+  width: 0.46rem;
+}
+
+.mbar.c {
+  background: #e0402f;
+}
+
+.mbar-h {
+  width: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.subtxt {
+  flex: 1;
+  min-width: 0;
+}
+
+.sub-nm {
+  display: block;
+  font-size: 0.32rem;
+  font-weight: 600;
+  letter-spacing: 0.02rem;
+}
+
+.slbl {
+  display: block;
+  font-size: 0.19rem;
+  color: #e0402f;
+  letter-spacing: 0.03rem;
+  margin: 0.12rem 0 0.04rem;
+}
+
+.sub-jc {
+  display: block;
+  font-size: 0.23rem;
+  line-height: 1.75;
+}
+
+.question-line {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 0.18rem;
+  padding: 0.16rem 0.2rem;
+  background: #ffffff;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.16rem;
+}
+
+.ql-k {
+  width: 1.2rem;
+  flex: none;
+  font-size: 0.21rem;
+  color: #e0402f;
+  letter-spacing: 0.02rem;
+  padding-top: 0.04rem;
+}
+
+.ql-v {
+  flex: 1;
+  font-size: 0.25rem;
+  line-height: 1.7;
+  color: #15171c;
+  word-break: break-all;
+}
+
+.time-line {
+  margin-top: 0.22rem;
+  text-align: center;
+  font-size: 0.21rem;
+  color: #a2a6ad;
+}
+
+/* 保存前填写所占事项的弹层 */
+.mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: rgba(21, 23, 28, 0.46);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  box-sizing: border-box;
+}
+
+.dialog {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 0.24rem;
+  padding: 0.36rem 0.3rem 0.28rem;
+  box-shadow: 0 0.16rem 0.48rem rgba(21, 23, 28, 0.22);
+}
+
+.dlg-t {
+  display: block;
+  font-size: 0.32rem;
+  font-weight: 700;
+  letter-spacing: 0.04rem;
+  color: #15171c;
+  text-align: center;
+}
+
+.dlg-d {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.22rem;
+  line-height: 1.7;
+  color: #71767f;
+  text-align: center;
+}
+
+.dlg-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.26rem;
+  padding: 0.18rem 0.2rem;
+  min-height: 0.76rem;
+  font-size: 0.26rem;
+  color: #15171c;
+  background: #fafbfc;
+  border: 0.02rem solid #d8dce0;
+  border-radius: 0.12rem;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.dlg-btns {
+  display: flex;
+  margin-top: 0.26rem;
+}
+
+.dlg-btn {
+  flex: 1;
+  height: 0.76rem;
+  line-height: 0.76rem;
+  font-size: 0.26rem;
+  letter-spacing: 0.02rem;
+  border-radius: 0.12rem;
+  background: #e0402f;
+  color: #ffffff;
+}
+
+.dlg-btn.ghost {
+  margin-right: 0.18rem;
+  background: #f5f6f8;
+  color: #71767f;
+  border: 0.02rem solid #d8dce0;
+}
+
+/* ===== pages/divine/divine.wxss ===== */
+.dpage {
+  padding: 0.22rem 0.18rem 0.4rem;
+}
+
+.serif {
+  font-family: "Songti SC", "STSong", serif;
+}
+
+/* ================= 头部 ================= */
+.dhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.14rem;
+}
+
+.dh-t {
+  font-size: 0.3rem;
+  font-weight: 700;
+  letter-spacing: 0.06rem;
+}
+
+.dh-m {
+  font-size: 0.2rem;
+  color: #71767f;
+  letter-spacing: 0.01rem;
+}
+
+/* ================= 六爻记录带 ================= */
+.record {
+  display: flex;
+  margin-bottom: 0.12rem;
+}
+
+.rec {
+  flex: 1;
+  position: relative;
+  margin-right: 0.08rem;
+  padding: 0.1rem 0 0.08rem;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.14rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.rec:last-child {
+  margin-right: 0;
+}
+
+.rec-k {
+  font-size: 0.18rem;
+  color: #b6bac1;
+  letter-spacing: 0.02rem;
+  line-height: 1;
+}
+
+.rec-v {
+  margin-top: 0.08rem;
+  height: 0.3rem;
+  line-height: 0.3rem;
+  font-size: 0.22rem;
+  color: #c9ccd2;
+}
+
+.rec.has {
+  border-color: #dcdfe4;
+}
+
+.rec.has .rec-k {
+  color: #71767f;
+}
+
+.rec.has .rec-v {
+  color: #15171c;
+  font-weight: 700;
+}
+
+.rec.cur {
+  border-color: #e0402f;
+  background: #fdeeeb;
+  box-shadow: 0 0 0 0.04rem rgba(224, 64, 47, 0.08);
+}
+
+.rec.cur .rec-k,
+.rec.cur .rec-v {
+  color: #e0402f;
+  font-weight: 700;
+}
+
+/* 九 / 六 标「变」 */
+.rec-b {
+  position: absolute;
+  top: 0.04rem;
+  right: 0.06rem;
+  font-size: 0.14rem;
+  line-height: 1;
+  color: #e0402f;
+  letter-spacing: 0;
+}
+
+/* ================= 挂一 · 太极 ================= */
+.taiji {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.12rem;
+  padding: 0.12rem 0.18rem 0.12rem 0.26rem;
+  border: 0.02rem solid #15171c;
+  border-radius: 0.18rem;
+  background: #ffffff;
+  box-shadow: 0 0.04rem 0.16rem rgba(21, 23, 28, 0.08);
+  overflow: hidden;
+}
+
+/* 左侧竖条：强调「这一策自始至终在场」 */
+.taiji::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.06rem;
+  background: #15171c;
+}
+
+/* 未拈出之前只留一个淡虚位，不预先摆那颗黑球 */
+.tj-ring {
+  position: relative;
+  width: 0.78rem;
+  height: 0.78rem;
+  flex: 0 0 0.78rem;
+  margin-right: 0.18rem;
+  border: 0.02rem dashed #dcdfe4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 太极既立，虚线圈才缓缓呼吸 */
+.taiji.on .tj-ring {
+  border-color: #15171c;
+  animation: tjbreath 3.6s ease-in-out infinite;
+}
+
+/* 日轮升定：落定那一瞬自虚位荡开一圈暖光，随后归于常驻的墨色 */
+.taiji.on .tj-ring::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 0.02rem solid rgba(255, 190, 96, 0.85);
+  box-shadow: 0 0 0.22rem 0.08rem rgba(255, 178, 80, 0.42);
+  animation: sunLand 700ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunLand {
+  0%   { opacity: 0.9; transform: scale(0.62); }
+  100% { opacity: 0;   transform: scale(1.6); }
+}
+
+@keyframes tjbreath {
+  0%, 100% {
+    border-color: rgba(21, 23, 28, 0.28);
+    transform: scale(1);
+  }
+  50% {
+    border-color: rgba(21, 23, 28, 0.85);
+    transform: scale(1.05);
+  }
+}
+
+.tj-ball {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: #15171c;
+  box-shadow: 0 0.04rem 0.12rem rgba(21, 23, 28, 0.45);
+  opacity: 0;
+  transform: scale(0.94);
+  /* 落定不再弹跳：与飞球几乎同尺寸同位置，稳稳涨到实位，接缝看不出来 */
+  transition: opacity 0.1s ease, transform 0.2s ease-out;
+}
+
+/* 飞球落定的同一瞬显形，尺寸位置与飞球完全一致，接缝看不出来 */
+.taiji.on .tj-ball {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tj-txt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tj-t {
+  font-size: 0.26rem;
+  font-weight: 700;
+  letter-spacing: 0.04rem;
+  color: #15171c;
+  line-height: 1.2;
+}
+
+.tj-n {
+  margin-top: 0.06rem;
+  font-size: 0.17rem;
+  color: #8b9099;
+  letter-spacing: 0.005rem;
+  line-height: 1.3;
+}
+
+.tj-tag {
+  flex: 0 0 auto;
+  margin-left: 0.1rem;
+  padding: 0.04rem 0.12rem;
+  border-radius: 9.99rem;
+  background: #f2f3f5;
+  color: #8b9099;
+  font-size: 0.16rem;
+  letter-spacing: 0.03rem;
+  line-height: 1.4;
+}
+
+.taiji.on .tj-tag {
+  background: #fdeeeb;
+  color: #e0402f;
+}
+
+/* ================= 席上策数：球堆外左上角 ================= */
+.pile-tag {
+  position: absolute;
+  left: -0.08rem;
+  top: -0.1rem;
+  z-index: 9;
+  display: flex;
+  align-items: baseline;
+  padding: 0.06rem 0.14rem 0.07rem;
+  border: 0.02rem solid #15171c;
+  border-radius: 0.12rem;
+  background: #ffffff;
+  box-shadow: 0 0.04rem 0.12rem rgba(21, 23, 28, 0.10);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pile-cap {
+  margin-right: 0.08rem;
+  font-size: 0.15rem;
+  color: #8b9099;
+  letter-spacing: 0.01rem;
+}
+
+.pile-n {
+  font-size: 0.3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #15171c;
+}
+
+.pile-u {
+  margin-left: 0.04rem;
+  font-size: 0.16rem;
+  color: #71767f;
+}
+
+/* ================= 主体 ================= */
+.dbody {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ---------- 圆席 ---------- */
+.cwrap {
+  position: relative;
+  margin-right: 0.06rem;
+  flex: 0 0 auto;
+}
+
+.circl {
+  position: relative;
+  border: 0.02rem solid #dcdfe4;
+  border-radius: 50%;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: inset 0 0.02rem 0.1rem rgba(21, 23, 28, 0.05);
+  box-sizing: border-box;
+}
+
+/* 球 */
+.ball {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 0.02rem solid #15171c;
+  box-sizing: border-box;
+  box-shadow: 0 0.02rem 0.03rem rgba(21, 23, 28, 0.16);
+  transition-property: left, top, background-color, box-shadow, opacity, transform;
+  transition-timing-function: cubic-bezier(0.22, 0.85, 0.3, 1);
+  z-index: 2;
+}
+
+.ball.warn {
+  border-color: #e0402f;
+  background: #fdeeeb;
+  box-shadow: 0 0 0 0.06rem rgba(224, 64, 47, 0.18), 0 0.02rem 0.06rem rgba(224, 64, 47, 0.3);
+  z-index: 3;
+}
+
+/* 球心正好压在分界线上的球：判归属只看球心，用一圈朱红虚环标出来 */
+.ball.edge::after {
+  content: '';
+  position: absolute;
+  left: -0.06rem;
+  top: -0.06rem;
+  right: -0.06rem;
+  bottom: -0.06rem;
+  border-radius: 50%;
+  border: 0.02rem dashed rgba(154, 42, 42, 0.55);
+  pointer-events: none;
+}
+
+.ball.dark {
+  background-color: #15171c;
+  border-color: #15171c;
+  box-shadow: 0 0.03rem 0.08rem rgba(21, 23, 28, 0.42);
+}
+
+/* 拈起为太极的那一策：变黑后微微抬起放大，明确告诉占者取的是哪一颗 */
+.ball.dark.pick {
+  transform: scale(1.26);
+  z-index: 6;
+  box-shadow: 0 0.06rem 0.18rem rgba(21, 23, 28, 0.55), 0 0 0 0.05rem rgba(21, 23, 28, 0.14);
+}
+
+/* 归奇已离席：原位留一个虚线小圈，标明这几策是从哪儿扐出去的 */
+.ball.ghost {
+  background-color: transparent;
+  border: 0.02rem dashed rgba(21, 23, 28, 0.42);
+  box-shadow: none;
+  transform: scale(0.62);
+  transition-duration: 320ms !important;
+}
+
+/* 彻底离席（下一变重铺时才会用到） */
+.ball.gone {
+  opacity: 0;
+  transform: scale(0.45);
+  transition-duration: 300ms !important;
+}
+
+/* 重新出场的球（洗牌时补回来的） */
+.ball.pop {
+  animation: ballpop 0.42s ease both;
+}
+
+@keyframes ballpop {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 画布：你画的线 + 手绘圈 */
+.ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+}
+
+/* 左 / 右角标：避开左上角那枚「在席 N 策」标签 */
+.dtag {
+  position: absolute;
+  top: 0.58rem;
+  z-index: 7;
+  padding: 0.04rem 0.14rem;
+  border-radius: 9.99rem;
+  background: #ffffff;
+  border: 0.02rem solid #dcdfe4;
+  font-size: 0.16rem;
+  color: #71767f;
+  letter-spacing: 0.01rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.dtag.on {
+  opacity: 1;
+}
+
+.dtag-l {
+  left: 0.12rem;
+}
+
+.dtag-r {
+  right: 0.12rem;
+}
+
+.dtag-b {
+  color: #15171c;
+  font-weight: 700;
+}
+
+/* ---------- 成爻 ---------- */
+.yao-calc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeup 0.42s ease both;
+}
+
+@keyframes fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(0.1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.yc-cap {
+  font-size: 0.18rem;
+  color: #71767f;
+  letter-spacing: 0.06rem;
+}
+
+.yc-eq {
+  font-size: 0.22rem;
+  color: #71767f;
+  margin-top: 0.06rem;
+}
+
+.yc-num {
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 0.04rem;
+}
+
+.yao-line {
+  width: 0.96rem;
+  height: 0.14rem;
+  margin-top: 0.1rem;
+}
+
+.yao-line.yang {
+  background: #15171c;
+  border-radius: 0.02rem;
+}
+
+.yao-line.yin {
+  display: flex;
+  justify-content: space-between;
+}
+
+.yao-line.yin::before,
+.yao-line.yin::after {
+  content: "";
+  width: 0.38rem;
+  height: 0.14rem;
+  background: #15171c;
+  border-radius: 0.02rem;
+}
+
+/* ---------- 三变柱：黑球自上而下计归奇，三段留空当 ---------- */
+.pillars {
+  width: 1.12rem;
+  flex: 0 0 1.12rem;
+  display: flex;
+  align-self: center;
+  padding-top: 0;
+}
+
+.pil {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 0.04rem;
+  min-width: 0;
+}
+
+.pil:last-child {
+  margin-right: 0;
+}
+
+.pil-lab {
+  font-size: 0.15rem;
+  color: #b6bac1;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+.pil-num {
+  font-size: 0.26rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 0.06rem;
+}
+
+.pil-dots {
+  width: 100%;
+  height: 2rem;
+  margin-top: 0.08rem;
+  padding: 0.1rem 0;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.12rem;
+  background: #fafbfc;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+/* 归奇落定：实心黑球（自上而下：挂 1 ｜ 右余 ｜ 左余） */
+.bdot {
+  width: 0.12rem;
+  height: 0.12rem;
+  margin-top: 0.04rem;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: #15171c;
+  border: none;
+  flex: 0 0 0.12rem;
+}
+
+/* 尚未归奇：极淡的空位 */
+.bdot.g {
+  background: #e3e6ea;
+}
+
+/* 段与段之间留空当：挂 1 ｜ 右余 ｜ 左余 */
+.bdot.gap {
+  margin-top: 0.12rem;
+}
+
+
+/* ================= 下方步骤轨 ================= */
+.steps {
+  display: flex;
+  align-items: center;
+  margin: 0 0.04rem;
+}
+
+.stp {
+  width: 0.44rem;
+  height: 0.44rem;
+  flex: 0 0 0.44rem;
+  border-radius: 50%;
+  border: 0.02rem solid #dcdfe4;
+  background: #ffffff;
+  color: #c3c7cd;
+  font-size: 0.18rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.stp.done {
+  border-color: #15171c;
+  color: #15171c;
+}
+
+.stp.cur {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+  transform: scale(1.08);
+  box-shadow: 0 0.06rem 0.16rem rgba(21, 23, 28, 0.3);
+}
+
+.stp-line {
+  flex: 1;
+  height: 0.02rem;
+  margin: 0 0.04rem;
+  background: #eceef1;
+}
+
+.stp-line.done {
+  background: #15171c;
+}
+
+.stpname {
+  margin-top: 0.2rem;
+  margin-bottom: 0.12rem;
+  text-align: center;
+  font-size: 0.28rem;
+  font-weight: 600;
+  color: #15171c;
+  letter-spacing: 0.03rem;
+}
+
+/* ================= 底部 ================= */
+.dbot {
+  margin-top: 0.18rem;
+}
+
+.dhint {
+  display: block;
+  margin-top: 0.14rem;
+  text-align: center;
+  font-size: 0.2rem;
+  color: #71767f;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+/* 计数 chip */
+.chips {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0.14rem;
+}
+
+.chip {
+  padding: 0.04rem 0.18rem;
+  margin: 0 0.05rem;
+  border: 0.02rem solid #dcdfe4;
+  border-radius: 9.99rem;
+  background: #ffffff;
+  font-size: 0.2rem;
+  color: #15171c;
+}
+
+.chip.dark-chip {
+  background: #15171c;
+  border-color: #15171c;
+  color: #ffffff;
+}
+
+.chip.sum {
+  background: #e0402f;
+  border-color: #e0402f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* 算式：不再做黑底卡片，与 .dhint 同一套说明文字排版 */
+.formula {
+  margin-top: 0.1rem;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.f-cap {
+  font-size: 0.18rem;
+  color: #9aa0aa;
+  letter-spacing: 0.04rem;
+  line-height: 1.7;
+}
+
+.f-eq {
+  margin-top: 0.02rem;
+  font-size: 0.2rem;
+  color: #71767f;
+  white-space: nowrap;
+  letter-spacing: 0.005rem;
+  line-height: 1.7;
+}
+
+.f-note {
+  margin-top: 0.02rem;
+  font-size: 0.18rem;
+  color: #9aa0aa;
+  letter-spacing: 0.005rem;
+  line-height: 1.7;
+}
+
+/* 按钮：紧跟步骤轨，.dbot 的 0.18rem 上边距即与步骤条的间距 */
+.btn {
+  margin-top: 0;
+  width: 100%;
+  padding: 0.22rem 0;
+  border-radius: 0.2rem;
+  background: #e0402f;
+  color: #ffffff;
+  font-size: 0.28rem;
+  letter-spacing: 0.08rem;
+  font-weight: 600;
+  height: auto;
+  line-height: 1.2;
+  box-shadow: 0 0.08rem 0.24rem rgba(224, 64, 47, 0.26);
+}
+
+.btn::after {
+  border: none;
+}
+
+.btn.wait {
+  background: #f0f1f3;
+  color: #a8adb5;
+  box-shadow: none;
+}
+
+.lock {
+  margin-top: 0.16rem;
+  padding: 0.12rem;
+  border: 0.02rem dashed #e0402f;
+  border-radius: 0.14rem;
+  background: #fdeeeb;
+  font-size: 0.19rem;
+  color: #e0402f;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.relink {
+  margin-top: 0.16rem;
+  text-align: center;
+  font-size: 0.2rem;
+  color: #71767f;
+  text-decoration: underline;
+}
+
+/* ================= 飞球 ================= */
+.flyball {
+  position: fixed;
+  z-index: 99;
+  border-radius: 50%;
+  background: #15171c;
+  border: 0.02rem solid transparent;
+  box-sizing: border-box;
+  box-shadow: 0 0.03rem 0.1rem rgba(21, 23, 28, 0.45);
+  transition-property: transform, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1);
+  pointer-events: none;
+}
+
+/* 落定：收成柱内那颗实心小黑球 */
+.flyball.land {
+  background-color: #15171c;
+  border: none;
+  box-shadow: none;
+}
+
+/* ================= 挂一 · 如日之初升 =================
+   位移由 JS 分四拍喂给 transition（慢起缓停），光感则全交给这里的
+   keyframes 独立承担：即使某次 setData 在真机上被合并、位移没播出来，
+   「由暗转明 → 日晕铺开 → 光华收回」的完整过程依然看得见，不会像闪现。 */
+.flyball.sun {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.34, 0.02, 0.22, 1);
+  animation: sunBody 1600ms ease-in-out both;
+}
+
+/* 本体：墨色日轮由内敛到镀上暖金边，升定后光华收回 */
+@keyframes sunBody {
+  0% {
+    border-color: rgba(255, 198, 104, 0);
+    box-shadow: 0 0.03rem 0.1rem rgba(21, 23, 28, 0.45);
+  }
+  16% {
+    border-color: rgba(255, 198, 104, 0.92);
+    box-shadow: 0 0 0.16rem 0.04rem rgba(255, 182, 84, 0.62),
+                0 0 0.34rem 0.12rem rgba(232, 126, 46, 0.30);
+  }
+  62% {
+    border-color: rgba(255, 210, 130, 0.78);
+    box-shadow: 0 0 0.22rem 0.07rem rgba(255, 182, 84, 0.55),
+                0 0 0.48rem 0.18rem rgba(232, 126, 46, 0.24);
+  }
+  100% {
+    border-color: rgba(255, 198, 104, 0);
+    box-shadow: 0 0.03rem 0.1rem rgba(21, 23, 28, 0.45);
+  }
+}
+
+/* 日晕：朱金暖光自球心向外铺开，再随升空缓缓淡去 */
+.flyball.sun::before {
+  content: "";
+  position: absolute;
+  left: -80%;
+  top: -80%;
+  width: 260%;
+  height: 260%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+              rgba(255, 214, 138, 0.62) 0%,
+              rgba(255, 176, 76, 0.34) 28%,
+              rgba(224, 64, 47, 0.16) 48%,
+              rgba(224, 64, 47, 0) 70%);
+  opacity: 0;
+  transform: scale(0.5);
+  animation: sunGlow 1600ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunGlow {
+  0%   { opacity: 0;    transform: scale(0.5); }
+  20%  { opacity: 0.95; transform: scale(1.0); }
+  64%  { opacity: 0.78; transform: scale(1.32); }
+  100% { opacity: 0;    transform: scale(1.62); }
+}
+
+/* 日冕环：一圈细金环自轮缘荡开，像旭日的光波 */
+.flyball.sun::after {
+  content: "";
+  position: absolute;
+  left: -0.04rem;
+  right: -0.04rem;
+  top: -0.04rem;
+  bottom: -0.04rem;
+  border-radius: 50%;
+  border: 0.02rem solid rgba(255, 196, 100, 0.9);
+  opacity: 0;
+  animation: sunRim 1200ms ease-out both;
+  pointer-events: none;
+}
+@keyframes sunRim {
+  0%   { opacity: 0;    transform: scale(0.9); }
+  18%  { opacity: 0.85; transform: scale(1.0); }
+  55%  { opacity: 0.35; transform: scale(1.9); }
+  78%  { opacity: 0.6;  transform: scale(1.0); }
+  100% { opacity: 0;    transform: scale(2.3); }
+}
+
+/* ===== pages/history/history.wxss ===== */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem 0.2rem;
+}
+
+.empty-icon {
+  font-size: 0.9rem;
+  color: #dcdfe4;
+  line-height: 1;
+}
+
+.empty-title {
+  margin-top: 0.2rem;
+  font-size: 0.3rem;
+  color: #15171c;
+}
+
+.empty-desc {
+  margin-top: 0.1rem;
+  font-size: 0.23rem;
+  color: #a2a6ad;
+}
+
+.empty .btn {
+  width: 100%;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.24rem;
+  padding: 0.26rem 0.24rem;
+  margin-bottom: 0.18rem;
+  box-shadow: 0 0.02rem 0.06rem rgba(21, 23, 28, 0.04);
+}
+
+.item-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name {
+  font-size: 0.32rem;
+  font-weight: 700;
+  letter-spacing: 0.03rem;
+}
+
+.item-q {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.08rem;
+  font-size: 0.24rem;
+  line-height: 1.5;
+  color: #e0402f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-sub {
+  margin-top: 0.08rem;
+  font-size: 0.22rem;
+  color: #71767f;
+}
+
+.item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.seal-sm {
+  width: 0.56rem;
+  height: 0.56rem;
+  line-height: 0.56rem;
+  border-radius: 0.1rem;
+  background: #e0402f;
+  color: #ffffff;
+  font-size: 0.2rem;
+  text-align: center;
+  letter-spacing: 0;
+  box-shadow: 0 0.04rem 0.1rem rgba(224, 64, 47, 0.28);
+}
+
+.item-time {
+  margin-top: 0.08rem;
+  font-size: 0.2rem;
+  color: #a2a6ad;
+}
+
+/* ===== pages/index/index.wxss ===== */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.1rem 0 0.26rem;
+}
+
+.hero-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14rem;
+  margin-left: 0.14rem;
+}
+
+.hero-sub {
+  margin-top: 0.12rem;
+  font-size: 0.22rem;
+  color: #71767f;
+  letter-spacing: 0.02rem;
+}
+
+.illu {
+  position: relative;
+  padding-top: 0.66rem;
+  margin-bottom: 0.08rem;
+}
+
+.fly-ball {
+  position: absolute;
+  top: 0.04rem;
+  left: 50%;
+  margin-left: -0.16rem;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: #15171c;
+  box-shadow: 0 0.04rem 0.1rem rgba(21, 23, 28, 0.32);
+  z-index: 2;
+}
+
+.fly-arrow {
+  position: absolute;
+  top: 0.38rem;
+  left: 50%;
+  height: 0.34rem;
+  border-left: 0.03rem dashed #15171c;
+}
+
+.mini-field {
+  position: relative;
+  width: 6.86rem;
+  height: 3rem;
+  background: #ffffff;
+  border: 0.02rem solid #dcdfe4;
+  border-radius: 0.28rem;
+  overflow: hidden;
+  margin: 0 auto;
+  box-shadow: inset 0 0.02rem 0.08rem rgba(21, 23, 28, 0.05);
+}
+
+.illu-cap {
+  display: block;
+  margin-top: 0.14rem;
+  text-align: center;
+  font-size: 0.21rem;
+  color: #71767f;
+  letter-spacing: 0.01rem;
+}
+
+.ritual-card {
+  margin-top: 0.26rem;
+  background: #ffffff;
+  border: 0.02rem solid #eceef1;
+  border-radius: 0.28rem;
+  padding: 0.34rem 0.24rem;
+  text-align: center;
+  box-shadow: 0 0.02rem 0.08rem rgba(21, 23, 28, 0.04);
+}
+
+.ritual-line {
+  display: block;
+  font-size: 0.28rem;
+  color: #15171c;
+  line-height: 2;
+  letter-spacing: 0.02rem;
+}
+
+.ritual-strong {
+  display: block;
+  font-size: 0.36rem;
+  font-weight: 700;
+  color: #e0402f;
+  letter-spacing: 0.06rem;
+  line-height: 1.8;
+}
+
+.tips {
+  margin-top: 0.22rem;
+  text-align: center;
+  font-size: 0.23rem;
+  color: #71767f;
+  line-height: 1.8;
+}
+
+.tips.sub {
+  margin-top: 0;
+  color: #a2a6ad;
+}
+
+/* 预览专用：真机上 .mask 的 fixed 相对 WebView 视口，本身正确；
+   这里把它约束在手机框内，避免相对浏览器窗口定位而超出边框。 */
+#phone .mask{position:absolute}
+</style>
+</head>
+<body>
+<div class="bar-top">
+  <h1>成卦结果页 · 真实交互预览</h1>
+  <span class="hint">加载转换后的 runtime.js + templates.js + bundle.js，与 APK / 小程序同一套代码。点手机内「保 存 占 例」可弹输入框，填完点「查 看 历 史」核对所占事项。</span>
+  <span id="scenes"></span>
+  <div class="bar-sep"></div>
+  <button id="btnHistory" class="act">查 看 历 史</button>
+  <button id="btnClear" class="act">清 空 演 示 数 据</button>
+</div>
+<div class="stage"><div id="phone"><div id="app"></div></div></div>
+<script>
+/* 大衍占筮 · Android WebView 运行时
+   把微信小程序的 App / Page / setData / wx.* 映射到浏览器环境。
+   本文件由 tools/convert.py 原样复制进 assets/www。 */
+(function () {
+  var W = window;
+
+  /* ---------- CommonJS 模块 ---------- */
+  W.__M = {};
+  W.__P = {};
+  W.__T = W.__T || {};
+  W.__APP = { globalData: {} };
+  W.__cur = '';
+  W.__def = function (id, fn) { W.__M[id] = { fn: fn, done: false, exports: {} }; };
+  W.__req = function (id, base) {
+    var parts = (base || '').split('/'); parts.pop();
+    id.split('/').forEach(function (s) {
+      if (s === '..') parts.pop();
+      else if (s && s !== '.') parts.push(s);
+    });
+    var key = parts.join('/').replace(/\.js$/, '') + '.js';
+    var m = W.__M[key];
+    if (!m) throw new Error('module not found: ' + id + ' -> ' + key);
+    if (!m.done) {
+      var mod = { exports: {} };
+      m.done = true;
+      m.fn(mod, mod.exports, function (p) { return W.__req(p, key); });
+      m.exports = mod.exports;
+    }
+    return m.exports;
+  };
+  W.Page = function (cfg) { W.__P[W.__cur] = cfg; };
+  W.App = function (cfg) {
+    W.__APP = cfg || {};
+    if (!W.__APP.globalData) W.__APP.globalData = {};
+  };
+  W.getApp = function () { return W.__APP; };
+
+  /* ---------- 模板辅助 ---------- */
+  W.__E = function (v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  W.__each = function (arr, fn) {
+    return (arr && arr.length !== undefined ? Array.prototype.slice.call(arr) : [])
+      .map(fn).join('');
+  };
+  W.__rpx = function (v) { return (Number(v) || 0) / 100 + 'rem'; };
+
+  /* ---------- 轻量 keyed DOM diff ----------
+     保留同 key 的节点，让 CSS transition / canvas 位图不因 setData 重建而丢失。 */
+  function kids(p) {
+    return Array.prototype.slice.call(p.childNodes).filter(function (n) {
+      return n.nodeType === 1 || (n.nodeType === 3 && /\S/.test(n.nodeValue));
+    });
+  }
+  function keyOf(n) {
+    if (n.nodeType === 3) return 'TXT';
+    var k = n.getAttribute('data-wxk');
+    return n.nodeName + '|' + (n.id || '') + '|' + (k == null ? '' : k);
+  }
+  function patchAttrs(o, n) {
+    if (o.nodeName === 'CANVAS') return;         // 画布位图与宽高一律不动
+    for (var i = o.attributes.length - 1; i >= 0; i--) {
+      var a = o.attributes[i];
+      if (!n.hasAttribute(a.name)) o.removeAttribute(a.name);
+    }
+    for (var j = 0; j < n.attributes.length; j++) {
+      var b = n.attributes[j];
+      if (o.getAttribute(b.name) !== b.value) o.setAttribute(b.name, b.value);
+    }
+    /* input 的 value 属性不会自动同步到 property；输入弹层重开时须显式对齐，
+       否则会出现上一次输入残留。 */
+    if (o.nodeName === 'INPUT' && n.hasAttribute('value')) {
+      var v = n.getAttribute('value');
+      if (o.value !== v) o.value = v;
+    }
+  }
+  function patchNode(o, n) {
+    if (o.nodeType === 3) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; return; }
+    if (o.nodeName === 'CANVAS') return;
+    patchAttrs(o, n);
+    patchChildren(o, n);
+  }
+  function patchChildren(oldP, newP) {
+    var olds = kids(oldP), news = kids(newP), pool = {}, used = [], nodes = [];
+    olds.forEach(function (n) { var k = keyOf(n); (pool[k] = pool[k] || []).push(n); });
+    news.forEach(function (nn) {
+      var k = keyOf(nn), arr = pool[k], m = null;
+      if (arr && arr.length) m = arr.shift();
+      if (!m) {
+        for (var kk in pool) {
+          if (pool[kk].length && pool[kk][0].nodeName === nn.nodeName) { m = pool[kk].shift(); break; }
+        }
+      }
+      if (m) { patchNode(m, nn); used.push(m); }
+      else m = nn.cloneNode(true);
+      nodes.push(m);
+    });
+    olds.forEach(function (o) {
+      if (used.indexOf(o) < 0 && o.parentNode === oldP) oldP.removeChild(o);
+    });
+    /* 只在成员/顺序真的变化时才挪动节点。无条件 appendChild 会把已在文档中的
+       节点 detach 再 attach，浏览器随之重置 CSS transition 与 animation ——
+       挂一飞球因此从起点直接跳到太极位（「闪现」），日晕也反复从头重播。 */
+    var cur = kids(oldP);
+    var same = cur.length === nodes.length &&
+      nodes.every(function (n, i) { return cur[i] === n; });
+    if (same) return;
+    nodes.forEach(function (n) { oldP.appendChild(n); });
+  }
+  function fromHTML(html) {
+    var d = document.createElement('div'); d.innerHTML = html; return d;
+  }
+
+  /* ---------- 页面实例 ---------- */
+  function makePage(route, options) {
+    var cfg = W.__P[route];
+    if (!cfg) throw new Error('no page: ' + route);
+    var p = {};
+    Object.keys(cfg).forEach(function (k) { if (k !== 'data') p[k] = cfg[k]; });
+    p.data = JSON.parse(JSON.stringify(cfg.data || {}));
+    p.route = route;
+    p.options = options || {};
+    p.__ready = false;
+    p.setData = function (o) {
+      if (!o) return;
+      Object.keys(o).forEach(function (k) {
+        if (k.indexOf('.') < 0) p.data[k] = o[k];
+        else {
+          var seg = k.split('.'), t = p.data;
+          for (var i = 0; i < seg.length - 1; i++) t = t[seg[i]] = t[seg[i]] || {};
+          t[seg[seg.length - 1]] = o[k];
+        }
+      });
+      if (W.__router.top() === p) W.__render(p);
+    };
+    return p;
+  }
+  W.__render = function (p) {
+    var tpl = W.__T[p.route];
+    if (!tpl) return;
+    var root = document.getElementById('app');
+    patchChildren(root, fromHTML(tpl(p.data)));
+    /* WebView 不认小程序 input 的 focus 属性；弹层首次出现时主动聚焦。
+       已聚焦时不再重复 focus，避免每次 setData 都重弹软键盘。 */
+    var f = root.querySelector && root.querySelector('input[focus="true"]');
+    if (f && document.activeElement !== f) { try { f.focus(); } catch (e) {} }
+    if (!p.__ready) { p.__ready = true; if (p.onReady) p.onReady(); }
+  };
+
+  /* ---------- 路由 ---------- */
+  var stack = [];
+  function parseUrl(url) {
+    var s = String(url || '').replace(/^\//, ''), i = s.indexOf('?');
+    var route = i < 0 ? s : s.slice(0, i), q = i < 0 ? '' : s.slice(i + 1), opts = {};
+    q.split('&').forEach(function (kv) {
+      if (!kv) return;
+      var a = kv.split('=');
+      opts[decodeURIComponent(a[0])] = decodeURIComponent(a[1] || '');
+    });
+    return { route: route, options: opts };
+  }
+  function drop(entry) {
+    if (entry && entry.page.onUnload) { try { entry.page.onUnload(); } catch (e) {} }
+  }
+  function activate(entry, fresh) {
+    stack.push(entry);
+    var p = entry.page;
+    if (fresh && p.onLoad) p.onLoad(entry.options);
+    W.__render(p);
+    if (p.onShow) p.onShow();
+  }
+  W.__router = {
+    start: function (url) { this.reLaunch(url || (W.__ROUTES && W.__ROUTES[0])); },
+    top: function () { return stack.length ? stack[stack.length - 1].page : null; },
+    navigateTo: function (url) {
+      var u = parseUrl(url), old = stack[stack.length - 1];
+      if (old && old.page.onHide) old.page.onHide();
+      activate({ route: u.route, options: u.options, page: makePage(u.route, u.options) }, true);
+    },
+    redirectTo: function (url) {
+      var u = parseUrl(url);
+      drop(stack.pop());
+      activate({ route: u.route, options: u.options, page: makePage(u.route, u.options) }, true);
+    },
+    reLaunch: function (url) {
+      while (stack.length) drop(stack.pop());
+      var u = parseUrl(url);
+      activate({ route: u.route, options: u.options, page: makePage(u.route, u.options) }, true);
+    },
+    back: function () {
+      if (stack.length > 1) {
+        drop(stack.pop());
+        var e = stack[stack.length - 1];
+        W.__render(e.page);
+        if (e.page.onShow) e.page.onShow();
+        return true;
+      }
+      return false;
+    }
+  };
+  W.__back = function () {
+    if (W.__router.back()) return;
+    if (W.Android && W.Android.finishApp) W.Android.finishApp();
+  };
+
+  /* ---------- 事件委托（bindtap / bindtouch* / catchtouch* / bindlongpress） ---------- */
+  function dataset(el) {
+    var o = {};
+    if (!el || !el.dataset) return o;
+    Object.keys(el.dataset).forEach(function (k) { o[k] = el.dataset[k]; });
+    return o;
+  }
+  function handlersFor(el, type) {
+    var raw = el.getAttribute && el.getAttribute('data-ev');
+    if (!raw) return null;
+    var out = [];
+    raw.split(';').forEach(function (seg) {
+      var m = /^([a-z]+)(!?):(\w+)$/.exec(seg);
+      if (m && m[1] === type) out.push({ fn: m[3], stop: m[2] === '!' });
+    });
+    return out.length ? out : null;
+  }
+  function pt(t, e) {
+    var o = t || e || {};
+    var x = o.clientX != null ? o.clientX : (o.pageX || 0);
+    var y = o.clientY != null ? o.clientY : (o.pageY || 0);
+    return { clientX: x, clientY: y, pageX: x, pageY: y, x: x, y: y, identifier: o.identifier || 0 };
+  }
+  function makeEv(native, cur, type) {
+    var touches = native.touches ? Array.prototype.map.call(native.touches, function (t) { return pt(t); })
+      : (type === 'touchend' || type === 'tap' ? [] : [pt(null, native)]);
+    var changed = native.changedTouches ? Array.prototype.map.call(native.changedTouches, function (t) { return pt(t); })
+      : (native.touches && native.touches.length ? touches : [pt(null, native)]);
+    var ev = {
+      type: type, timeStamp: native.timeStamp || Date.now(),
+      touches: touches, changedTouches: changed, detail: {},
+      currentTarget: { dataset: dataset(cur), id: cur && cur.id },
+      target: { dataset: dataset(native.target), id: native.target && native.target.id }
+    };
+    /* 小程序的 bindinput 事件从 e.detail.value 取值 */
+    if (type === 'input' && native.target && native.target.value != null) {
+      ev.detail.value = native.target.value;
+    }
+    return ev;
+  }
+  function dispatch(native, type) {
+    var p = W.__router.top();
+    if (!p) return false;
+    var el = native.target, chain = [], stop = false;
+    while (el && el.nodeType === 1 && el !== document.body) {
+      var hs = handlersFor(el, type);
+      if (hs) chain.push({ el: el, hs: hs });
+      el = el.parentNode;
+    }
+    for (var i = 0; i < chain.length && !stop; i++) {
+      var ent = chain[i];
+      for (var j = 0; j < ent.hs.length; j++) {
+        var h = ent.hs[j];
+        if (typeof p[h.fn] === 'function') p[h.fn].call(p, makeEv(native, ent.el, type));
+        if (h.stop) { stop = true; break; }
+      }
+    }
+    return chain.length > 0;
+  }
+  var longTimer = null, longStart = null;
+  ['touchstart', 'touchmove', 'touchend', 'click', 'input'].forEach(function (evt) {
+    var type = evt === 'click' ? 'tap' : evt;
+    document.addEventListener(evt, function (e) {
+      if (evt === 'touchstart') {
+        longStart = { x: pt(e.touches[0]).x, y: pt(e.touches[0]).y, el: e.target };
+        if (longTimer) clearTimeout(longTimer);
+        longTimer = setTimeout(function () {
+          var t = longStart && longStart.el;
+          if (t) dispatch({ target: t, touches: [], changedTouches: [], timeStamp: Date.now() }, 'longpress');
+          longTimer = null;
+        }, 500);
+      }
+      if (evt === 'touchmove' && longStart) {
+        var q = pt(e.touches[0]);
+        if (Math.abs(q.x - longStart.x) > 10 || Math.abs(q.y - longStart.y) > 10) {
+          if (longTimer) clearTimeout(longTimer); longTimer = null;
+        }
+      }
+      if (evt === 'touchend' || evt === 'click') {
+        if (longTimer) clearTimeout(longTimer); longTimer = null;
+      }
+      var hit = dispatch(e, type);
+      if (hit && (evt === 'touchmove' || evt === 'touchstart') && e.cancelable) e.preventDefault();
+    }, { passive: false });
+  });
+  /* 桌面浏览器调试：鼠标模拟划线 */
+  var mouseDown = false;
+  document.addEventListener('mousedown', function (e) {
+    if (e.target.closest && !e.target.closest('.circl')) return;
+    mouseDown = true;
+    dispatch({ target: e.target, touches: [pt(null, e)], changedTouches: [pt(null, e)], timeStamp: e.timeStamp }, 'touchstart');
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!mouseDown) return;
+    dispatch({ target: e.target, touches: [pt(null, e)], changedTouches: [pt(null, e)], timeStamp: e.timeStamp }, 'touchmove');
+  });
+  document.addEventListener('mouseup', function (e) {
+    if (!mouseDown) return;
+    mouseDown = false;
+    dispatch({ target: e.target, touches: [], changedTouches: [pt(null, e)], timeStamp: e.timeStamp }, 'touchend');
+  });
+
+  /* ---------- 选择器查询 ---------- */
+  function Query() { this.q = []; }
+  Query.prototype.in = function () { return this; };
+  Query.prototype.select = function (sel) { this._sel = sel; this._all = false; return this; };
+  Query.prototype.selectAll = function (sel) { this._sel = sel; this._all = true; return this; };
+  Query.prototype.boundingClientRect = function () {
+    this.q.push({ sel: this._sel, all: this._all, kind: 'rect' }); return this;
+  };
+  Query.prototype.fields = function (opts) {
+    this.q.push({ sel: this._sel, all: this._all, kind: 'fields', opts: opts || {} }); return this;
+  };
+  function rectOf(el) {
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    return {
+      left: r.left, top: r.top, right: r.right, bottom: r.bottom,
+      width: r.width, height: r.height, id: el.id, dataset: dataset(el)
+    };
+  }
+  Query.prototype.exec = function (cb) {
+    var root = document.getElementById('app');
+    var res = this.q.map(function (it) {
+      var els = it.all
+        ? Array.prototype.slice.call(root.querySelectorAll(it.sel))
+        : [root.querySelector(it.sel)];
+      if (it.kind === 'fields') {
+        var el = els[0];
+        if (!el) return null;
+        var o = { node: el };
+        var r = rectOf(el) || {};
+        if (it.opts.size) { o.width = r.width; o.height = r.height; }
+        if (it.opts.rect) { o.left = r.left; o.top = r.top; }
+        return o;
+      }
+      if (it.all) return els.map(rectOf).filter(Boolean);
+      return rectOf(els[0]);
+    });
+    cb && cb(res);
+  };
+
+  /* ---------- wx.* 垫片 ---------- */
+  function sysInfo() {
+    return {
+      windowWidth: window.innerWidth, windowHeight: window.innerHeight,
+      screenWidth: window.innerWidth, screenHeight: window.innerHeight,
+      pixelRatio: window.devicePixelRatio || 2,
+      statusBarHeight: 24, safeArea: { top: 24, bottom: window.innerHeight }
+    };
+  }
+  var toastTimer = null;
+
+  /* ---------- 占例持久化：原生文件为主 + WebView localStorage 为镜像 ----------
+     Android 覆盖安装（升级）会保留 /data/data/<pkg> 下的私有文件与 WebView 数据，
+     但 file:// 页面的 localStorage 依赖系统 WebView，个别机型上可能读不到。
+     故对占例数据双写：
+       写：app 私有 files/dayan_sessions.json ＋ localStorage；
+       读：原生文件优先；原生无有效数据而 localStorage 有数据时，判定为
+           v1.0 只写 localStorage 的旧占例，自动迁移回原生文件。
+     这样「直接覆盖安装新版」不会清空历史，旧版本与后续版本都能读到。
+     浏览器预览/无 bridge 环境自动退回纯 localStorage。 */
+  var SESSION_KEY = 'dayan_sessions_v1';
+
+  function hasBridge() {
+    return !!(W.Android && W.Android.getSessions && W.Android.setSessions);
+  }
+  function encodeVal(v) { return JSON.stringify({ __v: v }); }
+  function decodeVal(raw) {
+    if (raw == null || raw === '') return null;
+    try {
+      var o = JSON.parse(raw);
+      if (o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, '__v')) return o.__v;
+      return o;                                  // 兼容直接存数组的老格式
+    } catch (e) { return null; }
+  }
+  function lsRaw(k) {
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  }
+  function nativeRaw(k) {
+    if (k !== SESSION_KEY || !hasBridge()) return null;
+    try {
+      var s = W.Android.getSessions();
+      return (s == null || s === '') ? null : String(s);
+    } catch (e) { return null; }
+  }
+  function lsWrite(k, raw) {
+    try { localStorage.setItem(k, raw); } catch (e) {}
+  }
+  function nativeWrite(k, raw) {
+    if (k !== SESSION_KEY || !hasBridge()) return;
+    try { W.Android.setSessions(raw); } catch (e) {}
+  }
+
+  W.wx = {
+    getWindowInfo: sysInfo,
+    getSystemInfoSync: sysInfo,
+    showToast: function (o) {
+      o = o || {};
+      var t = document.getElementById('__toast');
+      if (!t) {
+        t = document.createElement('div'); t.id = '__toast';
+        t.style.cssText = 'position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:99999;' +
+          'background:rgba(21,23,28,.9);color:#fff;padding:12px 22px;border-radius:8px;' +
+          'font-size:14px;line-height:1.5;max-width:78%;text-align:center;pointer-events:none;';
+        document.body.appendChild(t);
+      }
+      t.textContent = o.title || '';
+      t.style.display = 'block';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { t.style.display = 'none'; }, o.duration || 1600);
+    },
+    showModal: function (o) {
+      o = o || {};
+      /* Android WebView 默认 WebChromeClient 不显示 JS 对话框，
+         MainActivity 已覆盖 onJsConfirm 用原生 AlertDialog 承接。 */
+      var ok = window.confirm(o.content || o.title || '');
+      if (o.success) o.success({ confirm: ok, cancel: !ok });
+    },
+    setStorageSync: function (k, v) {
+      var raw = encodeVal(v);
+      lsWrite(k, raw);
+      nativeWrite(k, raw);                       // 原生与镜像同时更新
+    },
+    getStorageSync: function (k) {
+      var nRaw = nativeRaw(k), nVal = decodeVal(nRaw);
+      if (nVal != null) return nVal;
+      var lRaw = lsRaw(k), lVal = decodeVal(lRaw);
+      if (lVal != null) {
+        /* 旧版本占例迁移：只在原生侧缺数据或数据损坏时回写一次 */
+        if (k === SESSION_KEY && nVal == null) nativeWrite(k, lRaw);
+        return lVal;
+      }
+      return '';
+    },
+    removeStorageSync: function (k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+      if (k === SESSION_KEY) nativeWrite(k, '');
+    },
+    navigateTo: function (o) { W.__router.navigateTo(o.url); },
+    redirectTo: function (o) { W.__router.redirectTo(o.url); },
+    reLaunch: function (o) { W.__router.reLaunch(o.url); },
+    navigateBack: function () { W.__router.back(); },
+    createSelectorQuery: function () { return new Query(); },
+    vibrateShort: function () {},
+    hideKeyboard: function () {}
+  };
+
+  /* ---------- rpx 基准 ---------- */
+  W.__setUnit = function () {
+    document.documentElement.style.fontSize = (window.innerWidth / 750 * 100) + 'px';
+  };
+  W.__setUnit();
+  window.addEventListener('resize', W.__setUnit);
+  W.__boot = function () { W.__setUnit(); W.__router.start(); };
+})();
+
+window.__T["pages/index/index"] = function (d) {
+  with (d) {
+    var __h0 = "";
+    __h0 += "<div" + " class=\""+"page"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"hero"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"hero-title serif"+"\"" + ">";
+    __h0 += "大衍占筮";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"hero-sub"+"\"" + ">";
+    __h0 += "刘君祖《易断全书》筮法 · 数字化";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"illu"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"fly-ball"+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"fly-arrow"+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"mini-field"+"\"" + ">";
+    __h0 += __each(balls, function(item, idx){ var __h1 = "";
+    __h1 += "<div" + " class=\""+"ball"+"\""+" style=\""+"left:"+__E(__rpx(item.x))+";top:"+__E(__rpx(item.y))+";width:"+__E(__rpx(ballSize))+";height:"+__E(__rpx(ballSize))+"\""+" data-wxk=\""+__E((item && item["id"] != null) ? item["id"] : idx)+"\"" + ">";
+    __h1 += "</div>";
+    return __h1; });
+    __h0 += "</div>";
+    __h0 += "<span" + " class=\""+"illu-cap"+"\"" + ">";
+    __h0 += "大衍之数五十，其用四十有九 · 拈出一枚不用";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"ritual-card"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"ritual-line"+"\"" + ">";
+    __h0 += "请闭目凝神";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"ritual-strong serif"+"\"" + ">";
+    __h0 += "心念所问之事";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"ritual-line"+"\"" + ">";
+    __h0 += "而后起卦";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"tips"+"\"" + ">";
+    __h0 += "分二由你亲手划线，挂一由程序代行";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"tips sub"+"\"" + ">";
+    __h0 += "太极既定：首爻八步，其后每爻七步 · 每步须你亲自推进";
+    __h0 += "</div>";
+    __h0 += "<button" + " class=\""+"btn"+"\""+" data-ev=\""+"tap:startDivine"+"\"" + ">";
+    __h0 += "开 始 起 卦";
+    __h0 += "</button>";
+    __h0 += "<button" + " class=\""+"btn ghost"+"\""+" data-ev=\""+"tap:goHistory"+"\"" + ">";
+    __h0 += "查 看 历 史";
+    __h0 += "</button>";
+    __h0 += "</div>";
+    return __h0;
+  }
+};
+window.__T["pages/divine/divine"] = function (d) {
+  with (d) {
+    var __h0 = "";
+    __h0 += "<div" + " class=\""+"page dpage"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"dhead"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"dh-t serif"+"\"" + ">";
+    __h0 += "大衍占筮";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"dh-m"+"\"" + ">";
+    __h0 += __E(metaText);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"record"+"\"" + ">";
+    __h0 += __each(yaoDots, function(item, idx){ var __h1 = "";
+    __h1 += "<div" + " class=\""+"rec "+__E(item.cls)+"\""+" data-wxk=\""+__E((item && item["k"] != null) ? item["k"] : idx)+"\"" + ">";
+    __h1 += "<span" + " class=\""+"rec-k"+"\"" + ">";
+    __h1 += __E(item.k);
+    __h1 += "</span>";
+    __h1 += "<div" + " class=\""+"rec-v"+"\"" + ">";
+    __h1 += __E(item.v);
+    __h1 += "</div>";
+    if (item.bian) {
+    __h1 += "<span" + " class=\""+"rec-b"+"\"" + ">";
+    __h1 += "变";
+    __h1 += "</span>";
+    }
+    __h1 += "</div>";
+    return __h1; });
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"taiji "+__E(taijiOn ? 'on' : '')+"\"" + ">";
+    __h0 += "<div" + " class=\""+"tj-ring"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"tj-ball"+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"tj-txt"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"tj-t"+"\"" + ">";
+    __h0 += __E(taijiOn ? '挂 1 策 · 太 极' : '五 十 策 列 席');
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"tj-n"+"\"" + ">";
+    __h0 += __E(taijiOn ? '起筮取一，虚一不用 · 十八变皆不参与' : '太极未立 · 点「下一步」自席上拈出一策');
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"tj-tag"+"\"" + ">";
+    __h0 += __E(taijiOn ? '不 动' : '待 拈');
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"dbody"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"cwrap"+"\""+" style=\""+"width:"+__E(dia)+"px;height:"+__E(dia)+"px"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"pile-tag"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"pile-cap"+"\"" + ">";
+    __h0 += "在 席";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"pile-n serif"+"\"" + ">";
+    __h0 += __E(pileCount);
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"pile-u"+"\"" + ">";
+    __h0 += "策";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"circl"+"\""+" id=\""+"ballField"+"\""+" style=\""+"width:"+__E(dia)+"px;height:"+__E(dia)+"px"+"\""+" data-ev=\""+"touchstart:onTouchStart;touchmove!:onTouchMove;touchend:onTouchEnd"+"\"" + ">";
+    __h0 += __each(balls, function(item, idx){ var __h2 = "";
+    __h2 += "<div" + " class=\""+"ball "+__E(item.cls)+"\""+" style=\""+"left:"+__E(item.x)+"px;top:"+__E(item.y)+"px;width:"+__E(ballSize)+"px;height:"+__E(ballSize)+"px;transition-duration:"+__E(item.d)+"ms;transition-delay:"+__E(item.dl)+"ms;animation-delay:"+__E(item.ad)+"ms"+"\""+" data-wxk=\""+__E((item && item["id"] != null) ? item["id"] : idx)+"\"" + ">";
+    __h2 += "</div>";
+    return __h2; });
+    __h0 += "<canvas" + " type=\""+"2d"+"\""+" id=\""+"ink"+"\""+" class=\""+"ink"+"\""+" style=\""+"width:"+__E(dia)+"px;height:"+__E(dia)+"px"+"\""+" data-ev=\""+"touchstart:onTouchStart;touchmove!:onTouchMove;touchend:onTouchEnd"+"\""+" data-keep=\"1\"" + ">";
+    __h0 += "</canvas>";
+    __h0 += "<div" + " class=\""+"dtag dtag-l "+__E(splitDone ? 'on' : '')+"\"" + ">";
+    __h0 += "左 ";
+    __h0 += "<span" + " class=\""+"dtag-b"+"\"" + ">";
+    __h0 += __E(leftCount);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"dtag dtag-r "+__E(splitDone ? 'on' : '')+"\"" + ">";
+    __h0 += "右 ";
+    __h0 += "<span" + " class=\""+"dtag-b"+"\"" + ">";
+    __h0 += __E(rightCount);
+    __h0 += "</span>";
+    __h0 += " · 挂 1";
+    __h0 += "</div>";
+    if (stepKey === 'yao') {
+    __h0 += "<div" + " class=\""+"yao-calc"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"yc-cap"+"\"" + ">";
+    __h0 += "三 变 余 策";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"yc-eq"+"\"" + ">";
+    __h0 += __E(yaoRemain)+" ÷ 4 ＝";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"yc-num serif"+"\"" + ">";
+    __h0 += __E(yaoNum);
+    __h0 += "</span>";
+    __h0 += "<div" + " class=\""+"yao-line "+__E(yaoYang ? 'yang' : 'yin')+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "</div>";
+    }
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"pillars"+"\"" + ">";
+    __h0 += __each(pillars, function(item, idx){ var __h3 = "";
+    __h3 += "<div" + " class=\""+"pil"+"\""+" data-wxk=\""+__E((item && item["lab"] != null) ? item["lab"] : idx)+"\"" + ">";
+    __h3 += "<span" + " class=\""+"pil-lab"+"\"" + ">";
+    __h3 += __E(item.lab);
+    __h3 += "</span>";
+    __h3 += "<span" + " class=\""+"pil-num"+"\""+" style=\""+"color:"+__E(item.c)+"\"" + ">";
+    __h3 += __E(item.val);
+    __h3 += "</span>";
+    __h3 += "<div" + " class=\""+"pil-dots"+"\"" + ">";
+    __h3 += __each(item.dots, function(d, idx){ var __h4 = "";
+    __h4 += "<div" + " class=\""+"bdot "+__E(item.done ? 'out' : 'g')+" "+__E(d.gap ? 'gap' : '')+"\""+" data-wxk=\""+__E((d && d["i"] != null) ? d["i"] : idx)+"\"" + ">";
+    __h4 += "</div>";
+    return __h4; });
+    __h3 += "</div>";
+    __h3 += "</div>";
+    return __h3; });
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"stpname"+"\"" + ">";
+    __h0 += __E(stepName);
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"steps"+"\"" + ">";
+    __h0 += __each(rails, function(item, idx){ var __h5 = "";
+    __h5 += "<div" + " class=\""+"stp "+__E(item.cls)+"\"" + ">";
+    __h5 += __E(item.n);
+    __h5 += "</div>";
+    if (item.line) {
+    __h5 += "<div" + " class=\""+"stp-line "+__E(item.lineCls)+"\"" + ">";
+    __h5 += "</div>";
+    }
+    return __h5; });
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"dbot"+"\"" + ">";
+    __h0 += "<button" + " class=\""+"btn "+__E(btnWait ? 'wait' : '')+"\""+" data-ev=\""+"tap:onNext"+"\"" + ">";
+    __h0 += __E(btnText);
+    __h0 += "</button>";
+    __h0 += "<span" + " class=\""+"dhint"+"\"" + ">";
+    __h0 += __E(hint);
+    __h0 += "</span>";
+    if (chips.length) {
+    __h0 += "<div" + " class=\""+"chips"+"\"" + ">";
+    __h0 += __each(chips, function(item, idx){ var __h6 = "";
+    __h6 += "<div" + " class=\""+"chip "+__E(item.dark ? 'dark-chip' : '')+" "+__E(item.sum ? 'sum' : '')+"\""+" data-wxk=\""+__E((item && item["t"] != null) ? item["t"] : idx)+"\"" + ">";
+    __h6 += __E(item.t);
+    __h6 += "</div>";
+    return __h6; });
+    __h0 += "</div>";
+    }
+    if (stepKey === 'count') {
+    __h0 += "<div" + " class=\""+"formula"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"f-cap"+"\"" + ">";
+    __h0 += "本 变 余 策";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"f-eq"+"\"" + ">";
+    __h0 += __E(formulaText);
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"f-note"+"\"" + ">";
+    __h0 += __E(formulaNote);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    }
+    if (stepKey === 'hang') {
+    __h0 += "<div" + " class=\""+"lock"+"\"" + ">";
+    __h0 += "此步不可跳过 —— 须你亲自点「下一步」，太极之策方自席上拈出";
+    __h0 += "</div>";
+    }
+    if (stepKey === 'split' && splitDone) {
+    __h0 += "<div" + " class=\""+"relink"+"\""+" data-ev=\""+"tap:onRedraw"+"\"" + ">";
+    __h0 += "重新划线";
+    __h0 += "</div>";
+    }
+    __h0 += "</div>";
+    __h0 += __each(fly, function(item, idx){ var __h7 = "";
+    __h7 += "<div" + " class=\""+"flyball "+__E(item.sun ? 'sun' : '')+" "+__E(item.land ? 'land' : '')+"\""+" style=\""+"left:"+__E(item.x)+"px;top:"+__E(item.y)+"px;width:"+__E(item.size)+"px;height:"+__E(item.size)+"px;transform:translate("+__E(item.tx)+"px,"+__E(item.ty)+"px) scale("+__E(item.sc)+");transition-duration:"+__E(item.d)+"ms;transition-delay:"+__E(item.dl)+"ms"+"\""+" data-wxk=\""+__E((item && item["id"] != null) ? item["id"] : idx)+"\"" + ">";
+    __h7 += "</div>";
+    return __h7; });
+    __h0 += "</div>";
+    return __h0;
+  }
+};
+window.__T["pages/result/result"] = function (d) {
+  with (d) {
+    var __h0 = "";
+    __h0 += "<div" + " class=\""+"page"+"\"" + ">";
+    if (ready) {
+    __h0 += "<div" + " class=\""+"sec-title serif"+"\"" + ">";
+    __h0 += "卦象生成";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"rule"+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"card verdict"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"verdict-k"+"\"" + ">";
+    __h0 += "断占总结";
+    __h0 += "</span>";
+    __h0 += __each(summaryLines, function(item, idx){ var __h1 = "";
+    __h1 += "<div" + " class=\""+"vline "+__E(item.last ? 'last' : '')+"\""+" data-wxk=\""+__E((item && item["key"] != null) ? item["key"] : idx)+"\"" + ">";
+    __h1 += "<span" + " class=\""+"vk"+"\"" + ">";
+    __h1 += __E(item.key);
+    __h1 += "</span>";
+    __h1 += "<span" + " class=\""+"vt serif"+"\"" + ">";
+    __h1 += __E(item.text);
+    __h1 += "</span>";
+    __h1 += "</div>";
+    return __h1; });
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"card"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"card-h"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"card-h-t"+"\"" + ">";
+    __h0 += "本卦";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"tag"+"\"" + ">";
+    __h0 += __E(ben.tag);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"hex-head"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"seal serif"+"\"" + ">";
+    __h0 += __E(ben.shortName);
+    __h0 += "</div>";
+    __h0 += "<span" + " class=\""+"hex-name serif"+"\"" + ">";
+    __h0 += __E(ben.name);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"trigrams"+"\"" + ">";
+    __h0 += __E(ben.upper)+" · "+__E(ben.lower);
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"hr"+"\"" + ">";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"hex"+"\"" + ">";
+    __h0 += __each(ben.lines, function(item, idx){ var __h2 = "";
+    __h2 += "<div" + " class=\""+"hex-line "+__E(item.isYi ? 'yi' : '')+"\""+" data-wxk=\""+__E((item && item["label"] != null) ? item["label"] : idx)+"\"" + ">";
+    __h2 += "<span" + " class=\""+"hex-label"+"\"" + ">";
+    __h2 += __E(item.label);
+    __h2 += "</span>";
+    __h2 += "<div" + " class=\""+"hex-bars"+"\"" + ">";
+    if (item.yang) {
+    __h2 += "<div" + " class=\""+"bar "+__E(item.changing ? 'changing' : '')+"\"" + ">";
+    __h2 += "</div>";
+    }
+    if (!item.yang) {
+    __h2 += "<div" + " class=\""+"yin"+"\"" + ">";
+    __h2 += "<div" + " class=\""+"bar half "+__E(item.changing ? 'changing' : '')+"\"" + ">";
+    __h2 += "</div>";
+    __h2 += "<div" + " class=\""+"bar half "+__E(item.changing ? 'changing' : '')+"\"" + ">";
+    __h2 += "</div>";
+    __h2 += "</div>";
+    }
+    __h2 += "</div>";
+    __h2 += "<span" + " class=\""+"hex-val"+"\"" + ">";
+    __h2 += __E(item.valueText);
+    __h2 += "</span>";
+    __h2 += "<div" + " class=\""+"marks"+"\"" + ">";
+    if (item.changing) {
+    __h2 += "<span" + " class=\""+"mk change"+"\"" + ">";
+    __h2 += "变";
+    __h2 += "</span>";
+    }
+    if (item.isYi) {
+    __h2 += "<span" + " class=\""+"mk yi"+"\"" + ">";
+    __h2 += "宜";
+    __h2 += "</span>";
+    }
+    if (item.isMain) {
+    __h2 += "<span" + " class=\""+"mk main"+"\"" + ">";
+    __h2 += "主变数";
+    __h2 += "</span>";
+    }
+    __h2 += "</div>";
+    __h2 += "</div>";
+    return __h2; });
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"legend"+"\"" + ">";
+    __h0 += "<span>";
+    __h0 += "朱红＝变爻";
+    __h0 += "</span>";
+    __h0 += "<span>";
+    __h0 += "虚线＝宜变之爻";
+    __h0 += "</span>";
+    __h0 += "<span>";
+    __h0 += "主变数＝相值";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    __h0 += "<span" + " class=\""+"lbl"+"\"" + ">";
+    __h0 += "卦辞";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"juan-text serif"+"\"" + ">";
+    __h0 += __E(ben.judgment);
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"lbl"+"\"" + ">";
+    __h0 += "爻辞";
+    __h0 += "</span>";
+    __h0 += "<div" + " class=\""+"ylist"+"\"" + ">";
+    __h0 += __each(ben.yaoList, function(item, idx){ var __h3 = "";
+    __h3 += "<div" + " class=\""+"yline "+__E(item.isMain ? 'main' : '')+"\""+" data-wxk=\""+__E((item && item["title"] != null) ? item["title"] : idx)+"\"" + ">";
+    __h3 += "<span" + " class=\""+"yp"+"\"" + ">";
+    __h3 += __E(item.title);
+    __h3 += "</span>";
+    __h3 += "<span" + " class=\""+"yc serif"+"\"" + ">";
+    if (item.prefix) {
+    __h3 += "<span" + " class=\""+"prefix "+__E(item.isRef ? 'ref' : '')+"\"" + ">";
+    __h3 += __E(item.prefix);
+    __h3 += "</span>";
+    }
+    __h3 += __E(item.text);
+    __h3 += "</span>";
+    __h3 += "</div>";
+    return __h3; });
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"card"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"card-h"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"card-h-t"+"\"" + ">";
+    __h0 += "变卦";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"tag"+"\"" + ">";
+    __h0 += __E(bian.tag);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    if (bian.mode == 'none') {
+    __h0 += "<div" + " class=\""+"empty"+"\"" + ">";
+    __h0 += "<span>";
+    __h0 += "六爻皆静，之卦即本卦";
+    __h0 += "</span>";
+    __h0 += "<span>";
+    __h0 += "依本卦卦辞卦象占断即可";
+    __h0 += "</span>";
+    __h0 += "</div>";
+    }
+    if (bian.mode != 'none') {
+    __h0 += __each(bian.cards, function(card, idx){ var __h4 = "";
+    __h4 += "<div" + " class=\""+"subcard "+__E(card.primary ? 'primary' : '')+" "+__E(card.mute ? 'mute' : '')+"\""+" data-wxk=\""+__E((card && card["title"] != null) ? card["title"] : idx)+"\"" + ">";
+    __h4 += "<div" + " class=\""+"subcard-h"+"\"" + ">";
+    __h4 += "<span" + " class=\""+"sub-t"+"\"" + ">";
+    __h4 += __E(card.title);
+    __h4 += "</span>";
+    __h4 += "<span" + " class=\""+"badge"+"\"" + ">";
+    __h4 += __E(card.badge);
+    __h4 += "</span>";
+    __h4 += "</div>";
+    __h4 += "<div" + " class=\""+"subbody"+"\"" + ">";
+    __h4 += "<div" + " class=\""+"minihex"+"\"" + ">";
+    __h4 += __each(card.miniLines, function(item, idx){ var __h5 = "";
+    __h5 += "<div" + " class=\""+"mline"+"\""+" data-wxk=\""+__E((item && item["key"] != null) ? item["key"] : idx)+"\"" + ">";
+    if (item.yang) {
+    __h5 += "<div" + " class=\""+"mbar full "+__E(item.changed ? 'c' : '')+"\"" + ">";
+    __h5 += "</div>";
+    }
+    if (!item.yang) {
+    __h5 += "<div" + " class=\""+"mbar-h"+"\"" + ">";
+    __h5 += "<div" + " class=\""+"mbar half "+__E(item.changed ? 'c' : '')+"\"" + ">";
+    __h5 += "</div>";
+    __h5 += "<div" + " class=\""+"mbar half "+__E(item.changed ? 'c' : '')+"\"" + ">";
+    __h5 += "</div>";
+    __h5 += "</div>";
+    }
+    __h5 += "</div>";
+    return __h5; });
+    __h4 += "</div>";
+    __h4 += "<div" + " class=\""+"subtxt"+"\"" + ">";
+    __h4 += "<span" + " class=\""+"sub-nm serif"+"\"" + ">";
+    __h4 += __E(card.name);
+    __h4 += "</span>";
+    __h4 += "<span" + " class=\""+"slbl"+"\"" + ">";
+    __h4 += "卦辞";
+    __h4 += "</span>";
+    __h4 += "<span" + " class=\""+"sub-jc serif"+"\"" + ">";
+    __h4 += __E(card.judgment);
+    __h4 += "</span>";
+    __h4 += "</div>";
+    __h4 += "</div>";
+    __h4 += "<span" + " class=\""+"slbl"+"\"" + ">";
+    __h4 += "爻辞";
+    __h4 += "</span>";
+    __h4 += "<div" + " class=\""+"ylist"+"\"" + ">";
+    __h4 += __each(card.yaoList, function(item, idx){ var __h6 = "";
+    __h6 += "<div" + " class=\""+"yline "+__E(item.changed ? 'chg' : '')+"\""+" data-wxk=\""+__E((item && item["title"] != null) ? item["title"] : idx)+"\"" + ">";
+    __h6 += "<span" + " class=\""+"yp"+"\"" + ">";
+    __h6 += __E(item.title);
+    __h6 += "</span>";
+    __h6 += "<span" + " class=\""+"yc serif"+"\"" + ">";
+    __h6 += __E(item.text);
+    __h6 += "</span>";
+    __h6 += "</div>";
+    return __h6; });
+    __h4 += "</div>";
+    __h4 += "</div>";
+    return __h4; });
+    }
+    __h0 += "</div>";
+    if (question) {
+    __h0 += "<div" + " class=\""+"question-line"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"ql-k"+"\"" + ">";
+    __h0 += "所占事项";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"ql-v serif"+"\"" + ">";
+    __h0 += __E(question);
+    __h0 += "</span>";
+    __h0 += "</div>";
+    }
+    __h0 += "<div" + " class=\""+"time-line"+"\"" + ">";
+    __h0 += __E(timeText);
+    __h0 += "</div>";
+    if (!saved) {
+    __h0 += "<button" + " class=\""+"btn"+"\""+" data-ev=\""+"tap:onSave"+"\"" + ">";
+    __h0 += "保 存 占 例";
+    __h0 += "</button>";
+    }
+    __h0 += "<button" + " class=\""+"btn ghost"+"\""+" data-ev=\""+"tap:onRestart"+"\"" + ">";
+    __h0 += "重 新 起 卦";
+    __h0 += "</button>";
+    __h0 += "<button" + " class=\""+"btn ghost"+"\""+" data-ev=\""+"tap:onHistory"+"\"" + ">";
+    __h0 += "查 看 历 史";
+    __h0 += "</button>";
+    }
+    if (asking) {
+    __h0 += "<div" + " class=\""+"mask"+"\""+" data-ev=\""+"tap!:onCancelAsk"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"dialog"+"\""+" data-ev=\""+"tap!:noop"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"dlg-t serif"+"\"" + ">";
+    __h0 += "所占事项";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"dlg-d"+"\"" + ">";
+    __h0 += "写下本次所问之事，保存后可在占例中回看";
+    __h0 += "</span>";
+    __h0 += "<input" + " class=\""+"dlg-input"+"\""+" value=\""+__E(questionInput)+"\""+" placeholder=\""+"如：求职、出行、家宅……"+"\""+" maxlength=\""+"40"+"\""+" focus=\""+__E(asking)+"\""+" confirm-type=\""+"done"+"\""+" data-ev=\""+"input:onQuestionInput;confirm:onConfirmAsk"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"dlg-btns"+"\"" + ">";
+    __h0 += "<button" + " class=\""+"dlg-btn ghost"+"\""+" data-ev=\""+"tap!:onCancelAsk"+"\"" + ">";
+    __h0 += "取 消";
+    __h0 += "</button>";
+    __h0 += "<button" + " class=\""+"dlg-btn"+"\""+" data-ev=\""+"tap!:onConfirmAsk"+"\"" + ">";
+    __h0 += "保 存";
+    __h0 += "</button>";
+    __h0 += "</div>";
+    __h0 += "</div>";
+    __h0 += "</div>";
+    }
+    __h0 += "</div>";
+    return __h0;
+  }
+};
+window.__T["pages/history/history"] = function (d) {
+  with (d) {
+    var __h0 = "";
+    __h0 += "<div" + " class=\""+"page"+"\"" + ">";
+    __h0 += "<div" + " class=\""+"sec-title serif"+"\"" + ">";
+    __h0 += "占 例";
+    __h0 += "</div>";
+    __h0 += "<div" + " class=\""+"rule"+"\"" + ">";
+    __h0 += "</div>";
+    if (empty) {
+    __h0 += "<div" + " class=\""+"empty"+"\"" + ">";
+    __h0 += "<span" + " class=\""+"empty-icon"+"\"" + ">";
+    __h0 += "○";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"empty-title"+"\"" + ">";
+    __h0 += "尚无占例";
+    __h0 += "</span>";
+    __h0 += "<span" + " class=\""+"empty-desc"+"\"" + ">";
+    __h0 += "起一卦并保存后，可在此回看";
+    __h0 += "</span>";
+    __h0 += "<button" + " class=\""+"btn"+"\""+" data-ev=\""+"tap:onBack"+"\"" + ">";
+    __h0 += "开 始 起 卦";
+    __h0 += "</button>";
+    __h0 += "</div>";
+    }
+    __h0 += __each(list, function(item, idx){ var __h1 = "";
+    __h1 += "<div" + " class=\""+"item"+"\""+" data-id=\""+__E(item.id)+"\""+" data-ev=\""+"tap:onOpen;longpress:onDelete"+"\""+" data-wxk=\""+__E((item && item["id"] != null) ? item["id"] : idx)+"\"" + ">";
+    __h1 += "<div" + " class=\""+"item-main"+"\"" + ">";
+    __h1 += "<span" + " class=\""+"item-name serif"+"\"" + ">";
+    __h1 += __E(item.name);
+    __h1 += "</span>";
+    if (item.question) {
+    __h1 += "<span" + " class=\""+"item-q"+"\"" + ">";
+    __h1 += "所占 · "+__E(item.question);
+    __h1 += "</span>";
+    }
+    if (item.changedName) {
+    __h1 += "<span" + " class=\""+"item-sub"+"\"" + ">";
+    __h1 += "之卦 "+__E(item.changedName);
+    __h1 += "</span>";
+    }
+    __h1 += "<span" + " class=\""+"item-sub"+"\"" + ">";
+    __h1 += "六爻不变";
+    __h1 += "</span>";
+    __h1 += "</div>";
+    __h1 += "<div" + " class=\""+"item-side"+"\"" + ">";
+    __h1 += "<div" + " class=\""+"seal-sm serif"+"\"" + ">";
+    __h1 += __E(item.shortName);
+    __h1 += "</div>";
+    __h1 += "<span" + " class=\""+"item-time"+"\"" + ">";
+    __h1 += __E(item.timeText);
+    __h1 += "</span>";
+    __h1 += "</div>";
+    __h1 += "</div>";
+    return __h1; });
+    __h0 += "<div" + " class=\""+"img-note"+"\"" + ">";
+    __h0 += "点击查看详情 · 长按删除";
+    __h0 += "</div>";
+    __h0 += "<button" + " class=\""+"btn ghost"+"\""+" data-ev=\""+"tap:onBack"+"\"" + ">";
+    __h0 += "返 回 首 页";
+    __h0 += "</button>";
+    __h0 += "</div>";
+    return __h0;
+  }
+};
+/* 由 tools/convert.py 生成：模块定义 + 页面注册 + 启动 */
+window.__ROUTES = ["pages/index/index","pages/divine/divine","pages/result/result","pages/history/history"];
+__def('app.js', function(module, exports, require){
+App({
+  globalData: {
+    pendingSession: null
+  },
+  onLaunch: function () {}
+});
+
+});
+__def('utils/dayan.js', function(module, exports, require){
+// utils/dayan.js —— 大衍筮法内核（纯函数，无副作用）
+// 依据：《易断全书·占卜玄机》大衍之术
+// 一变：分二 → 挂一（右堆取一） → 右堆揲四归奇 r1 → 左堆揲四归奇 r2 → 剩余 N-1-r1-r2
+
+const hexagrams = require('./hexagrams.js');
+
+const YAO_INFO = {
+  6: { name: '老阴', symbol: '⚋', yang: false, changing: true },
+  7: { name: '少阳', symbol: '⚊', yang: true, changing: false },
+  8: { name: '少阴', symbol: '⚋', yang: false, changing: false },
+  9: { name: '老阳', symbol: '⚊', yang: true, changing: true }
+};
+
+// 揲四余数：整除时记 4（非 0）
+function remainder4(n) {
+  const r = n % 4;
+  return r === 0 ? 4 : r;
+}
+
+// 单变演算
+function change(total, leftCount) {
+  const totalNum = Number(total) || 0;
+  const left = Number(leftCount) || 0;
+  const right = totalNum - left;
+  if (left < 1 || right < 1) {
+    return { error: 'INVALID_SPLIT' };
+  }
+  const hung = 1;
+  const rightAfterHang = right - hung;
+  const r1 = remainder4(rightAfterHang);
+  const r2 = remainder4(left);
+  const next = totalNum - hung - r1 - r2;
+  return {
+    total: totalNum,
+    left: left,
+    right: right,
+    hung: hung,
+    rightAfterHang: rightAfterHang,
+    r1: r1,
+    r2: r2,
+    next: next
+  };
+}
+
+// 三变后剩余 24/28/32/36 → 6/7/8/9
+function yaoValue(remain) {
+  const v = remain / 4;
+  return (v === 6 || v === 7 || v === 8 || v === 9) ? v : 0;
+}
+
+function yaoInfo(v) {
+  return YAO_INFO[v] || YAO_INFO[7];
+}
+
+// 揲四分组：返回 { groups: 组数, rem: 余数(1~4) }
+function groupsOf(count) {
+  const rem = remainder4(count);
+  return { groups: (count - rem) / 4, rem: rem };
+}
+
+// 非重叠散布：最小中心距 = 直径 + 间隙，随机取点并做碰撞检测
+function layoutBalls(count, width, height, size, gap) {
+  const minD = size + gap;
+  const pts = [];
+  let tries = 0;
+  const limit = count * 900;
+  const maxX = Math.max(width - size, 0);
+  const maxY = Math.max(height - size, 0);
+  while (pts.length < count && tries < limit) {
+    tries++;
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+    let ok = true;
+    for (let i = 0; i < pts.length; i++) {
+      const dx = pts[i].x - x;
+      const dy = pts[i].y - y;
+      if (dx * dx + dy * dy < minD * minD) { ok = false; break; }
+    }
+    if (ok) pts.push({ x: x, y: y });
+  }
+  return pts;
+}
+
+// 圆内非重叠散布：返回左上角坐标
+// side: 0 = 全部 / 1 = 左半 / 2 = 右半
+function layoutInCircle(count, diameter, size, gap, side) {
+  const cx = diameter / 2;
+  const cy = diameter / 2;
+  const Rmax = Math.max(cx - 7 - size / 2, 4);
+  const D = size + gap;
+  const pts = [];
+  let tries = 0;
+  const limit = count * 2500;
+  while (pts.length < count && tries < limit) {
+    tries++;
+    const a = Math.random() * Math.PI * 2;
+    const rr = Math.sqrt(Math.random()) * Rmax;
+    const bx = cx + Math.cos(a) * rr;
+    const by = cy + Math.sin(a) * rr;
+    if (side === 1 && bx > cx - 11) continue;
+    if (side === 2 && bx < cx + 11) continue;
+    let ok = true;
+    for (let i = 0; i < pts.length; i++) {
+      const dx = pts[i].x - bx;
+      const dy = pts[i].y - by;
+      if (dx * dx + dy * dy < D * D) { ok = false; break; }
+    }
+    if (ok) pts.push({ x: bx, y: by });
+  }
+  return pts.map(function (p) {
+    return { x: p.x - size / 2, y: p.y - size / 2 };
+  });
+}
+
+// 圆内均匀铺球：向日葵螺旋（密度按面积均分）+ 松弛（互不重叠）+ 微抖动
+// 与 layoutInCircle 的纯随机散布相比，不会出现「一坨一撮、旁边一个大空当」
+function layoutEven(count, diameter, size, gap) {
+  const cx = diameter / 2;
+  const cy = diameter / 2;
+  const Rmax = Math.max(cx - 8 - size / 2, 4);
+  const D = size + gap;
+  const N = Math.max(1, count | 0);
+  const rot = Math.random() * Math.PI * 2;
+  const golden = Math.PI * (3 - Math.sqrt(5));   // 黄金角 137.5°
+  const pts = [];
+
+  for (let i = 0; i < N; i++) {
+    const r = Rmax * Math.sqrt((i + 0.42) / N);
+    const a = rot + i * golden;
+    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+
+  /* 松弛：把过近的两颗推开，越出圆边的拉回；密度已由螺旋保证 */
+  for (let it = 0; it < 120; it++) {
+    let moved = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        let dx = pts[j].x - pts[i].x;
+        let dy = pts[j].y - pts[i].y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= D * D) continue;
+        let d = Math.sqrt(d2);
+        if (d < 0.001) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d = Math.sqrt(dx * dx + dy * dy) || 1; }
+        const push = (D - d) * 0.3;
+        const ux = dx / d;
+        const uy = dy / d;
+        pts[i].x -= ux * push; pts[i].y -= uy * push;
+        pts[j].x += ux * push; pts[j].y += uy * push;
+        moved++;
+      }
+    }
+    if (moved) {
+      for (let i = 0; i < N; i++) {
+        const dx = pts[i].x - cx;
+        const dy = pts[i].y - cy;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > Rmax) { pts[i].x = cx + dx / d * Rmax; pts[i].y = cy + dy / d * Rmax; }
+      }
+    } else {
+      break;
+    }
+  }
+
+  /* 微抖动：别让人看出是阵列 */
+  const jit = Math.min(D * 0.12, 3.2);
+  for (let i = 0; i < N; i++) {
+    pts[i].x += (Math.random() - 0.5) * jit;
+    pts[i].y += (Math.random() - 0.5) * jit;
+  }
+
+  return pts.map(function (p) {
+    return { x: p.x - size / 2, y: p.y - size / 2 };
+  });
+}
+
+// 把用户画的那一笔两端沿切线延长到圆席之外
+//
+// 占者画的是「分界的示意」，一笔停下来没画到最下排球，并不代表分界不存在 ——
+// 只要这一笔的方向明确，它的延长线照样把圆席切成两半。旧版要求「线的首尾必须
+// 盖过最上一排与最下一排球心」，斜着画时线常常先从圆席侧边出界（截图即此），
+// 于是被判成「最下面 N 策落在线外」而重画 —— 这正是要改的地方。
+//
+// 返回 { pts: 有序折线（含两端延长点）, segs: 两条延长段的端点，供画虚线提示 }
+function extendSplit(samples, W, H) {
+  const sorted = samples.slice().sort(function (a, b) { return a.y - b.y; });
+  const n = sorted.length;
+  if (n < 2) return { pts: sorted, segs: [] };
+
+  const Wd = W || 1000, Hd = H || 1000;
+  const loX = -0.02 * Wd, hiX = 1.02 * Wd, loY = -0.02 * Hd, hiY = 1.02 * Hd;
+
+  /* 方向：由内指向外（用内侧第 4 个点定方向，比首两点稳，手抖不至于歪） */
+  function outward(pOut, pIn) {
+    const dx = pOut.x - pIn.x, dy = pOut.y - pIn.y;
+    const L = Math.sqrt(dx * dx + dy * dy);
+    if (L < 1e-6) return null;
+    return { x: dx / L, y: dy / L };
+  }
+  /* 从 p 沿 d 打到外接矩形边界 */
+  function toEdge(p, d) {
+    let t = Infinity;
+    if (d.x > 1e-6) t = Math.min(t, (hiX - p.x) / d.x);
+    if (d.x < -1e-6) t = Math.min(t, (loX - p.x) / d.x);
+    if (d.y > 1e-6) t = Math.min(t, (hiY - p.y) / d.y);
+    if (d.y < -1e-6) t = Math.min(t, (loY - p.y) / d.y);
+    if (!isFinite(t) || t < 0) t = 0;
+    const cap = 2 * Math.max(Wd, Hd);
+    if (t > cap) t = cap;
+    return { x: p.x + d.x * t, y: p.y + d.y * t };
+  }
+
+  const pts = sorted.slice();
+  const segs = [];
+  const minSeg = 0.05 * Math.max(Wd, Hd);      // 太短的延长段不画，省得线上多出小尾巴
+  const dH = outward(sorted[0], sorted[Math.min(3, n - 1)]);
+  const dT = outward(sorted[n - 1], sorted[Math.max(0, n - 4)]);
+
+  if (dH) {
+    const q = toEdge(sorted[0], dH);
+    if (q.y < sorted[0].y - 1) {
+      pts.unshift(q);
+      if (sorted[0].y - q.y > minSeg) {
+        segs.push({ x1: q.x, y1: q.y, x2: sorted[0].x, y2: sorted[0].y });
+      }
+    }
+  }
+  if (dT) {
+    const q = toEdge(sorted[n - 1], dT);
+    if (q.y > sorted[n - 1].y + 1) {
+      pts.push(q);
+      if (q.y - sorted[n - 1].y > minSeg) {
+        segs.push({ x1: sorted[n - 1].x, y1: sorted[n - 1].y, x2: q.x, y2: q.y });
+      }
+    }
+  }
+  return { pts: pts, segs: segs };
+}
+
+// 按用户画的曲线把球分到左右两侧
+// samples: [{x, y}]；W/H 为圆席尺寸，用于把线延长到界外（缺省时按点云包围盒兜底）
+//
+// 归属判据只看「球心」：球是圆的，线从球阵中间穿过时必然要从某些球身上压过去
+// （实测每副平均 4~5 颗球的球心距线不足一个半径），所以不能用「整颗球在线的哪侧」判，
+// 那样每副都有一堆球说不清。球心落在线上（|dx| ≤ 0.30R）的这几颗记进 edge，
+// 由页面用朱红虚环标出来，让占者看得见「它是按球心算的」。
+// dx === 0 归右：判据是严格小于归左，浮点下几乎不会真的取等，仅作书面约定。
+function splitByCurve(balls, samples, size, W, H) {
+  if (!samples || samples.length < 2) {
+    return null;
+  }
+  const half = (size || 0) / 2;
+  const ext = extendSplit(samples, W, H);
+  const sorted = ext.pts;                 // 两端已延长，故所有球的 y 都落在范围内
+  const xs = sorted.map(function (p) { return p.x; }).sort(function (a, b) { return a - b; });
+  const midX = xs[Math.floor(xs.length / 2)];
+
+  function boundaryAt(y) {
+    if (y <= sorted[0].y) return sorted[0].x;
+    const last = sorted[sorted.length - 1];
+    if (y >= last.y) return last.x;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i];
+      const b = sorted[i + 1];
+      if (y >= a.y && y <= b.y) {
+        const t = b.y === a.y ? 0 : (y - a.y) / (b.y - a.y);
+        return a.x + (b.x - a.x) * t;
+      }
+    }
+    return last.x;
+  }
+
+  let left = 0;
+  const edge = [];                        // 球心压在线上（0.30R 以内）的球
+  const edgeTol = half * 0.30;
+  const sides = balls.map(function (b, i) {
+    const bx = boundaryAt(b.y + half);
+    const dx = (b.x + half) - bx;         // <0 在左，>0 在右，=0 压在线上
+    if (Math.abs(dx) <= edgeTol) edge.push(i);
+    if (dx < 0) { left++; return 1; }
+    return 2;
+  });
+
+  // 极端情况兜底：一侧为空则按中位线分
+  if (left === 0 || left === balls.length) {
+    let l = 0;
+    const fallback = balls.map(function (b) {
+      if (b.x + half < midX) { l++; return 1; }
+      return 2;
+    });
+    return { sides: fallback, left: l, right: balls.length - l, fallback: true, edge: [], ext: ext.segs };
+  }
+  return { sides: sides, left: left, right: balls.length - left, fallback: false, edge: edge, ext: ext.segs };
+}
+
+// 点到折线的最短距离
+function distToPolyline(p, pts) {
+  let best = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const L2 = dx * dx + dy * dy;
+    let t = L2 > 0 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / L2 : 0;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    const qx = a.x + dx * t;
+    const qy = a.y + dy * t;
+    const d = Math.sqrt((p.x - qx) * (p.x - qx) + (p.y - qy) * (p.y - qy));
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+// 划线是否「有话可讲」：笔势要成一个方向、不能回折，且不能横着画
+// 返回 { ok, code }：
+//   short —— 线太短（不足两个球径），画不出分界
+//   flat  —— 近乎水平，判据是按高度取分界点，横线没有高度可言
+//   back  —— 中途往回折，同一高度出现两个分界点，左右说不清
+//   ok    —— 可以分堆
+// 注意：不再判「线必须盖过上下两排球心」——两端会延长（extendSplit）。
+function checkSplit(balls, samples, size) {
+  if (!samples || samples.length < 2) return { ok: false, code: 'short' };
+  const half = (size || 0) / 2;
+
+  let top = Infinity, bot = -Infinity;
+  for (let i = 0; i < balls.length; i++) {
+    const cy = balls[i].y + half;
+    if (cy < top) top = cy;
+    if (cy > bot) bot = cy;
+  }
+
+  /* 一、短：这一笔还没画出一个方向，延长也没意义 */
+  let len = 0;
+  for (let i = 1; i < samples.length; i++) {
+    const dx = samples[i].x - samples[i - 1].x;
+    const dy = samples[i].y - samples[i - 1].y;
+    len += Math.sqrt(dx * dx + dy * dy);
+  }
+  if (len < (size || 0) * 2.2) return { ok: false, code: 'short' };
+
+  /* 二、横：判定是「按高度取分界点的 x」，近乎水平的一笔没有高度可言。
+     只要这一笔有明显的上下走向（y 跨度 ≥ 球阵高度三成），斜着画也行。 */
+  let minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < samples.length; i++) {
+    if (samples[i].y < minY) minY = samples[i].y;
+    if (samples[i].y > maxY) maxY = samples[i].y;
+  }
+  if (maxY - minY < (bot - top) * 0.30) return { ok: false, code: 'flat' };
+
+  /* 三、回折：逆着运笔方向倒退超过 1.5 个球径，说明画回来了（同一 y 会有两个分界点）
+     注意：不再要求「线的首尾必须盖过最上一排与最下一排球心」——
+     两端会沿切线延长到圆席之外（extendSplit），延长线照样把圆席切开。
+     旧版的 span 判据会把「斜着画、先从侧边出界」的正常一笔判成废话，
+     截图里那句「最下面 6 策落在线外」就是这么来的。 */
+  const dir = samples[samples.length - 1].y >= samples[0].y ? 1 : -1;   // 自下而上画也算数
+  let run = 0, worst = 0;
+  for (let i = 1; i < samples.length; i++) {
+    const dy = (samples[i].y - samples[i - 1].y) * dir;
+    if (dy < 0) {
+      run += -dy;
+      if (run > worst) worst = run;
+    } else {
+      run = 0;
+    }
+  }
+  if (worst > (size || 0) * 1.5) return { ok: false, code: 'back' };
+
+  return { ok: true };
+}
+
+// 组装一次完整占例
+function buildSession(values) {
+  const hex = hexagrams.buildHexagram(values);
+  const change = hexagrams.hasChange(values);
+  const changed = change ? hexagrams.buildHexagram(hexagrams.changedValues(values)) : null;
+  return {
+    values: values.slice(),
+    hex: hex,
+    changed: changed,
+    changeLabels: hexagrams.changeLabels(values),
+    hasChange: change
+  };
+}
+
+module.exports = {
+  YAO_INFO: YAO_INFO,
+  remainder4: remainder4,
+  change: change,
+  yaoValue: yaoValue,
+  yaoInfo: yaoInfo,
+  groupsOf: groupsOf,
+  layoutBalls: layoutBalls,
+  layoutInCircle: layoutInCircle,
+  layoutEven: layoutEven,
+  splitByCurve: splitByCurve,
+  extendSplit: extendSplit,
+  distToPolyline: distToPolyline,
+  checkSplit: checkSplit,
+  buildSession: buildSession
+};
+
+});
+__def('utils/duanzhan.js', function(module, exports, require){
+// utils/duanzhan.js —— 断占判定（纯函数，无副作用）
+// 依据《刘君祖易断全书·断占总论》：天地之数 55 − 卦之营数 S = r，
+// 按 12 步循环数爻得「宜变之爻」；再看动爻是否相值，并按动爻数切换主断层级。
+// 本模块同时产出成卦结果页所需的完整视图数据，小程序与 Android WebView 共用。
+
+const hexagrams = require('./hexagrams.js');
+const yaoci = require('./yaoci.js');
+
+const LABELS = ['初', '二', '三', '四', '五', '上'];
+const NUM = { 6: '六', 7: '七', 8: '八', 9: '九' };
+// 初→二→三→四→五→上→上→五→四→三→二→初，折返端点各计两次
+const SEQ = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0];
+
+function isChanging(v) { return v === 6 || v === 9; }
+function isYang(v) { return v === 7 || v === 9; }
+
+// 爻题：初九/初六、九二~九五/六二~六五、上九/上六
+function yaoTitle(i, yang) {
+  const n = yang ? '九' : '六';
+  if (i === 0) return '初' + n;
+  if (i === 5) return '上' + n;
+  return n + LABELS[i];
+}
+
+function changeIndexes(values) {
+  const out = [];
+  values.forEach(function (v, i) { if (isChanging(v)) out.push(i); });
+  return out;
+}
+
+// 老阳 9→少阴 8，老阴 6→少阳 7；只翻转指定爻位
+function flipSome(values, idxs) {
+  return values.map(function (v, i) {
+    if (idxs.indexOf(i) < 0) return v;
+    return v === 9 ? 8 : 7;
+  });
+}
+
+function sum(values) {
+  let s = 0;
+  values.forEach(function (v) { s += v; });
+  return s;
+}
+
+function conclusionLine(a) {
+  const n = a.n;
+  const m = a.mainTitle;
+  if (n === 0) return '直接以本卦卦辞卦象占断';
+  if (n === 6) {
+    if (a.specialYong) {
+      return a.yongKey + '「' + yaoci.yongText(a.hex.no) + '」为主断，不用之卦卦辞';
+    }
+    return '以六爻全变之卦的卦辞卦象为主断，并思本卦剧变成之卦的情由';
+  }
+  if (n === 1 && a.matched) return '以本卦' + m + '爻辞为主断，亦应参考变卦的卦辞';
+  if (n === 1) return '以本卦卦辞卦象为主断，该动爻爻辞作变动意向参考';
+  if (n === 2 && a.matched) return '以本卦' + m + '爻辞为主断，另一动爻供参考，并参单变之卦与两爻齐变之卦';
+  if (n === 2) return '以本卦卦辞卦象为主断，两动爻爻辞与齐变之卦列入观察';
+  if (n === 3 && a.matched) return '以本卦' + m + '爻辞为主断，并须考虑三爻齐变之卦的卦象卦辞';
+  if (n === 3) return '本卦与之卦卦辞卦象合参（贞悔相争）';
+  if (a.matched) {
+    return '以' + n + '爻齐变之卦的卦辞卦象为主断，' +
+      (n === 4 ? '加重考虑' : '稍加考虑') + '本卦' + m + '爻辞';
+  }
+  return '径以' + n + '爻齐变之卦的卦辞卦象为主断，并思本卦变至之卦的缘由';
+}
+
+// 12 类场景的核心判定：动爻数 × 宜变之爻是否相值
+function analyze(values) {
+  const changing = changeIndexes(values);
+  const n = changing.length;
+  const S = sum(values);
+  const r = 55 - S;
+  const yi = SEQ[(r - 1) % 12];
+  const matched = changing.indexOf(yi) >= 0;
+  const hex = hexagrams.buildHexagram(values);
+  const labels = changing.map(function (i) { return yaoTitle(i, isYang(values[i])); });
+  const yiTitle = yaoTitle(yi, isYang(values[yi]));
+  const specialYong = (n === 6 && (hex.no === 1 || hex.no === 2));
+  const yongKey = hex.no === 1 ? '用九' : '用六';
+
+  // 0、6 爻变时宜变之爻不参与判断；4、5 爻相值时它只作加权，不另立主断
+  const mainIndex = (n >= 1 && n <= 5 && matched) ? yi : -1;
+  const mainTitle = mainIndex >= 0 ? yaoTitle(mainIndex, isYang(values[mainIndex])) : '';
+  const refIndexes = (n === 6) ? [] : changing.filter(function (i) { return i !== mainIndex; });
+
+  let mode;
+  if (n === 0) mode = 'none';
+  else if (n === 1 && matched) mode = 'merged';
+  else if ((n === 2 || n === 3) && matched) mode = 'dual';
+  else if (n <= 2) mode = 'reference';
+  else if (n === 3) mode = 'contest';
+  else mode = 'primary';
+
+  const a = {
+    values: values, changing: changing, n: n, S: S, r: r, yi: yi,
+    yiTitle: yiTitle, matched: matched, hex: hex, labels: labels,
+    mainIndex: mainIndex, mainTitle: mainTitle, refIndexes: refIndexes,
+    specialYong: specialYong, yongKey: yongKey, mode: mode
+  };
+
+  const line1 = n === 0
+    ? '动爻数量为0，六爻皆七、八而无变爻'
+    : '动爻数量为' + n + '，' + (n === 1 ? '为' : '分别为') + labels.join('、');
+  const line2 = n === 0
+    ? '不必起天地之数，故无宜变之爻可算'
+    : (n === 6
+      ? '六爻全变，宜变之爻已无意义，不必算天地之数'
+      : '卦之营数为' + S + '，算得宜变之爻为' + yiTitle +
+        '，宜变之爻' + (matched ? '为动爻' : '非动爻（此位为静爻）'));
+  a.lines = [line1, line2, conclusionLine(a)];
+  return a;
+}
+
+// 本卦卡片：卦象（自上而下）＋ 卦辞 ＋ 六爻爻辞（自上而下：上→初，与卦象同序）
+function benView(values, a) {
+  const h = a.hex;
+  const texts = yaoci.yaoTexts(h.no);
+  const lines = [];
+  for (let i = 5; i >= 0; i--) {
+    lines.push({
+      label: LABELS[i],
+      yang: isYang(values[i]),
+      changing: isChanging(values[i]),
+      isYi: (a.n > 0 && a.n < 6 && a.yi === i),
+      isMain: (a.mainIndex === i),
+      valueText: NUM[values[i]] + (isYang(values[i]) ? ' ⚊' : ' ⚋')
+    });
+  }
+  const yaoList = [];
+  for (let i = 5; i >= 0; i--) {
+    yaoList.push({
+      title: yaoTitle(i, isYang(values[i])),
+      text: texts[i] || '',
+      prefix: a.mainIndex === i ? '（主断）' : (a.refIndexes.indexOf(i) >= 0 ? '（参考）' : ''),
+      isMain: a.mainIndex === i,
+      isRef: a.refIndexes.indexOf(i) >= 0
+    });
+  }
+  // 乾、坤六爻全变时，用九／用六替代之卦卦辞，列于六爻之后
+  if (a.specialYong) {
+    yaoList.push({
+      title: a.yongKey, text: yaoci.yongText(h.no), prefix: '（主断）',
+      isMain: true, isRef: false
+    });
+  }
+  return {
+    name: h.name,
+    shortName: h.shortName,
+    judgment: h.judgment,
+    upper: h.upperSymbol + ' ' + h.upper + '（上）',
+    lower: h.lowerSymbol + ' ' + h.lower + '（下）',
+    tag: h.name + ' · 贞',
+    lines: lines,
+    yaoList: yaoList
+  };
+}
+
+// 之卦卡片：小卦象（自上而下）＋ 完整卦辞 ＋ 六爻爻辞（自上而下：上→初）
+function bianCard(values, flipIdx, title, badge, style) {
+  const flipped = flipSome(values, flipIdx);
+  const h = hexagrams.buildHexagram(flipped);
+  const texts = yaoci.yaoTexts(h.no);
+  const miniLines = [];
+  for (let i = 5; i >= 0; i--) {
+    miniLines.push({ key: 'y' + i, yang: isYang(flipped[i]), changed: flipIdx.indexOf(i) >= 0 });
+  }
+  const yaoList = [];
+  for (let i = 5; i >= 0; i--) {
+    yaoList.push({
+      title: yaoTitle(i, isYang(flipped[i])),
+      text: texts[i] || '',
+      changed: flipIdx.indexOf(i) >= 0
+    });
+  }
+  return {
+    title: title, badge: badge, name: h.name, shortName: h.shortName,
+    judgment: h.judgment, miniLines: miniLines, yaoList: yaoList,
+    primary: style === 'primary', mute: style === 'mute'
+  };
+}
+
+// 页面视图数据：三行总结 / 本卦 / 变卦
+function buildResult(values) {
+  const a = analyze(values);
+  const summaryLines = [
+    { key: '动爻', text: a.lines[0], last: false },
+    { key: '宜变', text: a.lines[1], last: false },
+    { key: '结论', text: a.lines[2], last: true }
+  ];
+
+  const cards = [];
+  if (a.mode === 'dual') {
+    cards.push(bianCard(values, [a.mainIndex], '单爻变卦', '仅' + a.mainTitle + '变', ''));
+    cards.push(bianCard(values, a.changing, '多爻齐变卦', a.labels.join('、') + '齐变', ''));
+  } else if (a.mode !== 'none') {
+    const badge = a.mode === 'primary'
+      ? (a.specialYong ? a.yongKey + '为主断' : '主断依据')
+      : a.mode === 'contest' ? '与本卦合参'
+        : a.mode === 'reference' ? '仅作参考' : '单变＝齐变';
+    const title = a.mode === 'merged' ? '变卦' : '多爻齐变卦';
+    const style = a.mode === 'primary' ? (a.specialYong ? '' : 'primary')
+      : a.mode === 'reference' ? 'mute' : '';
+    cards.push(bianCard(values, a.changing, title, badge, style));
+  }
+
+  return {
+    summaryLines: summaryLines,
+    ben: benView(values, a),
+    bian: {
+      mode: a.mode,
+      tag: a.mode === 'none' ? '无变爻' : (a.mode === 'dual' ? '须分看两卦' : '悔卦'),
+      cards: cards
+    },
+    analysis: {
+      n: a.n, S: a.S, r: a.r, yi: a.yi, yiTitle: a.yiTitle,
+      matched: a.matched, mode: a.mode, mainIndex: a.mainIndex,
+      specialYong: a.specialYong, labels: a.labels, lines: a.lines
+    }
+  };
+}
+
+module.exports = {
+  analyze: analyze,
+  buildResult: buildResult,
+  yaoTitle: yaoTitle,
+  changeIndexes: changeIndexes,
+  flipSome: flipSome,
+  SEQ: SEQ
+};
+
+});
+__def('utils/hexagrams.js', function(module, exports, require){
+// utils/hexagrams.js —— 六十四卦查表（通行本）
+// 卦由下而上：下卦 = 初二三爻，上卦 = 四五六爻
+// 三爻位序均为「自下而上」
+
+const TRIGRAM_BY_BITS = {
+  '111': '乾',
+  '110': '兑',
+  '101': '离',
+  '100': '震',
+  '011': '巽',
+  '010': '坎',
+  '001': '艮',
+  '000': '坤'
+};
+
+const TRIGRAM_SYMBOL = {
+  乾: '☰',
+  兑: '☱',
+  离: '☲',
+  震: '☳',
+  巽: '☴',
+  坎: '☵',
+  艮: '☶',
+  坤: '☷'
+};
+
+// TABLE[上卦][下卦] = 卦序
+const TABLE = {
+  乾: { 乾: 1, 兑: 10, 离: 13, 震: 25, 巽: 44, 坎: 6, 艮: 33, 坤: 12 },
+  兑: { 乾: 43, 兑: 58, 离: 49, 震: 17, 巽: 28, 坎: 47, 艮: 31, 坤: 45 },
+  离: { 乾: 14, 兑: 38, 离: 30, 震: 21, 巽: 50, 坎: 64, 艮: 56, 坤: 35 },
+  震: { 乾: 34, 兑: 54, 离: 55, 震: 51, 巽: 32, 坎: 40, 艮: 62, 坤: 16 },
+  巽: { 乾: 9, 兑: 61, 离: 37, 震: 42, 巽: 57, 坎: 59, 艮: 53, 坤: 20 },
+  坎: { 乾: 5, 兑: 60, 离: 63, 震: 3, 巽: 48, 坎: 29, 艮: 39, 坤: 8 },
+  艮: { 乾: 26, 兑: 41, 离: 22, 震: 27, 巽: 18, 坎: 4, 艮: 52, 坤: 23 },
+  坤: { 乾: 11, 兑: 19, 离: 36, 震: 24, 巽: 46, 坎: 7, 艮: 15, 坤: 2 }
+};
+
+const NAMES = {
+  1: '乾为天', 2: '坤为地', 3: '水雷屯', 4: '山水蒙',
+  5: '水天需', 6: '天水讼', 7: '地水师', 8: '水地比',
+  9: '风天小畜', 10: '天泽履', 11: '地天泰', 12: '天地否',
+  13: '天火同人', 14: '火天大有', 15: '地山谦', 16: '雷地豫',
+  17: '泽雷随', 18: '山风蛊', 19: '地泽临', 20: '风地观',
+  21: '火雷噬嗑', 22: '山火贲', 23: '山地剥', 24: '地雷复',
+  25: '天雷无妄', 26: '山天大畜', 27: '山雷颐', 28: '泽风大过',
+  29: '坎为水', 30: '离为火', 31: '泽山咸', 32: '雷风恒',
+  33: '天山遁', 34: '雷天大壮', 35: '火地晋', 36: '地火明夷',
+  37: '风火家人', 38: '火泽睽', 39: '水山蹇', 40: '雷水解',
+  41: '山泽损', 42: '风雷益', 43: '泽天夬', 44: '天风姤',
+  45: '泽地萃', 46: '地风升', 47: '泽水困', 48: '水风井',
+  49: '泽火革', 50: '火风鼎', 51: '震为雷', 52: '艮为山',
+  53: '风山渐', 54: '雷泽归妹', 55: '雷火丰', 56: '火山旅',
+  57: '巽为风', 58: '兑为泽', 59: '风水涣', 60: '水泽节',
+  61: '风泽中孚', 62: '雷山小过', 63: '水火既济', 64: '火水未济'
+};
+
+const JUDGMENTS = {
+  1: '元亨利贞。',
+  2: '元亨，利牝马之贞。君子有攸往，先迷后得主，利。西南得朋，东北丧朋。安贞吉。',
+  3: '元亨利贞。勿用有攸往，利建侯。',
+  4: '亨。匪我求童蒙，童蒙求我。初筮告，再三渎，渎则不告。利贞。',
+  5: '有孚，光亨，贞吉。利涉大川。',
+  6: '有孚，窒惕，中吉，终凶。利见大人，不利涉大川。',
+  7: '贞，丈人吉，无咎。',
+  8: '吉。原筮，元永贞，无咎。不宁方来，后夫凶。',
+  9: '亨。密云不雨，自我西郊。',
+  10: '履虎尾，不咥人，亨。',
+  11: '小往大来，吉亨。',
+  12: '否之匪人，不利君子贞，大往小来。',
+  13: '同人于野，亨。利涉大川，利君子贞。',
+  14: '元亨。',
+  15: '亨，君子有终。',
+  16: '利建侯行师。',
+  17: '元亨利贞，无咎。',
+  18: '元亨，利涉大川。先甲三日，后甲三日。',
+  19: '元亨利贞。至于八月有凶。',
+  20: '盥而不荐，有孚颙若。',
+  21: '亨。利用狱。',
+  22: '亨。小利有攸往。',
+  23: '不利有攸往。',
+  24: '亨。出入无疾，朋来无咎。反复其道，七日来复。利有攸往。',
+  25: '元亨利贞。其匪正有眚，不利有攸往。',
+  26: '利贞。不家食吉，利涉大川。',
+  27: '贞吉。观颐，自求口实。',
+  28: '栋桡。利有攸往，亨。',
+  29: '习坎，有孚，维心亨，行有尚。',
+  30: '利贞，亨。畜牝牛，吉。',
+  31: '亨，利贞。取女吉。',
+  32: '亨，无咎，利贞，利有攸往。',
+  33: '亨，小利贞。',
+  34: '利贞。',
+  35: '康侯用锡马蕃庶，昼日三接。',
+  36: '利艰贞。',
+  37: '利女贞。',
+  38: '小事吉。',
+  39: '利西南，不利东北。利见大人，贞吉。',
+  40: '利西南。无所往，其来复吉。有攸往，夙吉。',
+  41: '有孚，元吉，无咎，可贞，利有攸往。曷之用？二簋可用享。',
+  42: '利有攸往，利涉大川。',
+  43: '扬于王庭，孚号有厉。告自邑，不利即戎。利有攸往。',
+  44: '女壮，勿用取女。',
+  45: '亨。王假有庙。利见大人，亨，利贞。用大牲吉。利有攸往。',
+  46: '元亨。用见大人，勿恤。南征吉。',
+  47: '亨，贞，大人吉，无咎。有言不信。',
+  48: '改邑不改井，无丧无得，往来井井。汔至亦未繘井，羸其瓶，凶。',
+  49: '己日乃孚。元亨利贞，悔亡。',
+  50: '元吉，亨。',
+  51: '亨。震来虩虩，笑言哑哑。震惊百里，不丧匕鬯。',
+  52: '艮其背，不获其身；行其庭，不见其人。无咎。',
+  53: '女归吉，利贞。',
+  54: '征凶，无攸利。',
+  55: '亨，王假之。勿忧，宜日中。',
+  56: '小亨，旅贞吉。',
+  57: '小亨。利有攸往，利见大人。',
+  58: '亨，利贞。',
+  59: '亨。王假有庙，利涉大川，利贞。',
+  60: '亨。苦节不可贞。',
+  61: '豚鱼吉。利涉大川，利贞。',
+  62: '亨，利贞。可小事，不可大事。飞鸟遗之音，不宜上，宜下，大吉。',
+  63: '亨小，利贞。初吉终乱。',
+  64: '亨。小狐汔济，濡其尾，无攸利。'
+};
+
+const YAO_LABELS = ['初', '二', '三', '四', '五', '上'];
+
+// 由六个爻值（初→上，6/7/8/9）得出卦体
+function buildHexagram(values) {
+  const bits = values.map(function (v) {
+    return (v === 7 || v === 9) ? 1 : 0;
+  });
+  const lowerBits = bits.slice(0, 3).join('');
+  const upperBits = bits.slice(3, 6).join('');
+  const lower = TRIGRAM_BY_BITS[lowerBits];
+  const upper = TRIGRAM_BY_BITS[upperBits];
+  const no = TABLE[upper][lower];
+  return {
+    no: no,
+    name: NAMES[no],
+    shortName: shortName(NAMES[no]),
+    judgment: JUDGMENTS[no],
+    upper: upper,
+    lower: lower,
+    upperSymbol: TRIGRAM_SYMBOL[upper],
+    lowerSymbol: TRIGRAM_SYMBOL[lower],
+    bits: bits
+  };
+}
+
+function shortName(full) {
+  if (full.charAt(1) === '为') return full.charAt(0);
+  return full.slice(2);
+}
+
+// 变爻：老阳(9)变阴、老阴(6)变阳
+function changedValues(values) {
+  return values.map(function (v) {
+    if (v === 9) return 8;
+    if (v === 6) return 7;
+    return v;
+  });
+}
+
+function hasChange(values) {
+  return values.some(function (v) { return v === 6 || v === 9; });
+}
+
+// 变爻位置（初→上），返回如 ['初九', '六三', '上九']
+// 称谓：初九/初六、九二~九五/六二~六五、上九/上六
+function changeLabels(values) {
+  const out = [];
+  values.forEach(function (v, i) {
+    if (v !== 6 && v !== 9) return;
+    const num = v === 9 ? '九' : '六';
+    if (i === 0) out.push('初' + num);
+    else if (i === 5) out.push('上' + num);
+    else out.push(num + YAO_LABELS[i]);
+  });
+  return out;
+}
+
+module.exports = {
+  TRIGRAM_BY_BITS: TRIGRAM_BY_BITS,
+  TRIGRAM_SYMBOL: TRIGRAM_SYMBOL,
+  NAMES: NAMES,
+  JUDGMENTS: JUDGMENTS,
+  buildHexagram: buildHexagram,
+  changedValues: changedValues,
+  hasChange: hasChange,
+  changeLabels: changeLabels,
+  shortName: shortName
+};
+
+});
+__def('utils/loops.js', function(module, exports, require){
+// utils/loops.js —— 揲四「手绘圈」几何（纯函数，无副作用，可在 Node 里单测）
+//
+// 目标：在 49 颗球的密排里，把「四策一撮」就地圈出来，且
+//   1) 圈贴着这四颗的外沿走（不至于把四颗画成一根香肠）；
+//   2) 遇别组的球就收口（圈不把别组的球圈进来）；
+//   3) 遇你画的那条线就收口（圈不越线）；
+//   4) 圈与圈之间不穿插。
+//
+// 坐标约定：pts 一律是「球心」坐标；W、H ＝ 圆席宽高（px）；sz ＝ 球径（px）。
+
+/* 取一撮：从种子开始，每次挑离这一撮最近的补齐（圈得才紧凑） */
+function takeNearest(pool, seed, need, pts) {
+  const got = [seed];
+  const rest = [];
+  for (let i = 0; i < pool.length; i++) if (pool[i] !== seed) rest.push(pool[i]);
+
+  while (got.length < need && rest.length) {
+    let bi = 0, bd = 1e18;
+    for (let k = 0; k < rest.length; k++) {
+      let s = 0;
+      for (let q = 0; q < got.length; q++) {
+        const dx = pts[rest[k]].x - pts[got[q]].x;
+        const dy = pts[rest[k]].y - pts[got[q]].y;
+        s += dx * dx + dy * dy;
+      }
+      s /= got.length;
+      if (s < bd) { bd = s; bi = k; }
+    }
+    got.push(rest[bi]);
+    rest.splice(bi, 1);
+  }
+  return got;
+}
+
+/* 最紧凑的一撮：枚举种子，取离它最近的 k-1 颗，选「最远两颗距离」最小的那一组。
+   余数那一撮（3~4 颗）常被摊在球阵边缘，东一颗西一颗，圈出来就是靴子形；
+   先在剩下的球里挑一组挨得最紧的，圈自然就圆。O(n² log n)，n≤49，约 1ms。 */
+function tightest(pool, k, pts) {
+  if (k >= pool.length) return pool.slice();
+  if (k <= 0) return [];
+  let best = null, bestD = 1e18;
+  for (let s = 0; s < pool.length; s++) {
+    const si = pool[s];
+    const rest = [];
+    for (let t = 0; t < pool.length; t++) {
+      if (t === s) continue;
+      const q = pool[t];
+      const dx = pts[q].x - pts[si].x, dy = pts[q].y - pts[si].y;
+      rest.push({ i: q, d: dx * dx + dy * dy });
+    }
+    rest.sort(function (a, b) { return a.d - b.d; });
+    const cand = [si];
+    for (let u = 0; u < rest.length && cand.length < k; u++) cand.push(rest[u].i);
+    let far = 0;
+    for (let a = 0; a < cand.length; a++) {
+      for (let b = a + 1; b < cand.length; b++) {
+        const dx = pts[cand[a]].x - pts[cand[b]].x, dy = pts[cand[a]].y - pts[cand[b]].y;
+        const d = dx * dx + dy * dy;
+        if (d > far) far = d;
+      }
+    }
+    if (far < bestD - 1e-9) { bestD = far; best = cand; }
+  }
+  return best || pool.slice(0, k);
+}
+
+/* 四颗一撮：种子取「离本片重心最远」的那颗，再逐个挑最近的补齐 */
+function cluster4(idxs, pts) {
+  let left = idxs.slice();
+  const out = [];
+  while (left.length >= 4) {
+    let cx = 0, cy = 0;
+    for (let i = 0; i < left.length; i++) { cx += pts[left[i]].x; cy += pts[left[i]].y; }
+    cx /= left.length; cy /= left.length;
+
+    let si = 0, far = -1;
+    for (let j = 0; j < left.length; j++) {
+      const dx = pts[left[j]].x - cx, dy = pts[left[j]].y - cy;
+      const dd = dx * dx + dy * dy;
+      if (dd > far) { far = dd; si = j; }
+    }
+    const g = takeNearest(left, left[si], 4, pts);
+    out.push(g);
+    left = left.filter(function (x) { return g.indexOf(x) < 0; });
+  }
+  return out;
+}
+
+/* 一撮的「最远半径平方」——越小越紧凑 */
+function clusterCost(g, pts) {
+  let cx = 0, cy = 0;
+  for (let i = 0; i < g.length; i++) { cx += pts[g[i]].x; cy += pts[g[i]].y; }
+  cx /= g.length; cy /= g.length;
+  let m = 0;
+  for (let j = 0; j < g.length; j++) {
+    const dx = pts[g[j]].x - cx, dy = pts[g[j]].y - cy;
+    const d = dx * dx + dy * dy;
+    if (d > m) m = d;
+  }
+  return m;
+}
+
+/* 两撮之间互换成员，把每一撮收得更紧（圈更小更圆） */
+function refineClusters(gs, pts) {
+  for (let pass = 0; pass < 3; pass++) {
+    let changed = false;
+    for (let a = 0; a < gs.length; a++) {
+      for (let b = a + 1; b < gs.length; b++) {
+        const A = gs[a], B = gs[b];
+        let base = clusterCost(A, pts) + clusterCost(B, pts);
+        for (let u = 0; u < A.length; u++) {
+          for (let v = 0; v < B.length; v++) {
+            let t = A[u]; A[u] = B[v]; B[v] = t;
+            const now = clusterCost(A, pts) + clusterCost(B, pts);
+            if (now < base - 0.01) { base = now; changed = true; }
+            else { t = A[u]; A[u] = B[v]; B[v] = t; }
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+  return gs;
+}
+
+/* 你画的线在某个 y 上的 x（折线插值） */
+function boundaryX(stroke, y) {
+  let best = 1e9, bx = stroke[0].x;
+  for (let i = 0; i < stroke.length - 1; i++) {
+    const a = stroke[i], c = stroke[i + 1];
+    const y0 = Math.min(a.y, c.y), y1 = Math.max(a.y, c.y);
+    const yy = Math.max(y0, Math.min(y1, y));
+    const t = (y1 === y0) ? 0 : (yy - y0) / (y1 - y0);
+    const x = a.x + (c.x - a.x) * t;
+    const d = Math.abs(y - yy);
+    if (d < best) { best = d; bx = x; }
+  }
+  return bx;
+}
+
+/* 分组：跳过挂起的那一枚；左右各按 4 颗一格切分，余数单独归一撮
+   返回 [{idx:[球序号], rem:bool, side:'L'|'R'}]
+   注意：整除不是余零，而是余四（《占卜玄机》），故 rem = m % 4 || 4，
+   这一撮整四颗与余 1/2/3 一样要取出离席。 */
+function groupBalls(sides, pts, skip, sz) {
+  const out = [];
+  ['L', 'R'].forEach(function (side) {
+    const idxs = [];
+    for (let i = 0; i < sides.length; i++) {
+      if (sides[i] === side && i !== skip) idxs.push(i);
+    }
+    const m = idxs.length;
+    if (!m) return;
+
+    const rem = m % 4 || 4;
+
+    /* 余数那一撮：以离本侧重心最远的一颗作种子，就近凑够 */
+    let cx = 0, cy = 0;
+    for (let a = 0; a < m; a++) { cx += pts[idxs[a]].x; cy += pts[idxs[a]].y; }
+    cx /= m; cy /= m;
+
+    let seed = idxs[0], far = -1;
+    for (let b = 0; b < m; b++) {
+      const dx = pts[idxs[b]].x - cx, dy = pts[idxs[b]].y - cy;
+      const dd = dx * dx + dy * dy;
+      if (dd > far) { far = dd; seed = idxs[b]; }
+    }
+    const remIdx = takeNearest(idxs, seed, rem, pts);
+    const rest = [];
+    for (let c = 0; c < m; c++) if (remIdx.indexOf(idxs[c]) < 0) rest.push(idxs[c]);
+
+    if (rest.length >= 4) {
+      const gs = refineClusters(cluster4(rest, pts), pts);
+      for (let t = 0; t < gs.length; t++) out.push({ idx: gs[t], rem: false, side: side });
+    }
+    out.push({ idx: remIdx, rem: true, side: side });
+  });
+  return out;
+}
+
+/* 组内最小生成树：四颗以内直接 Prim，用来把「串在一起的四颗」连成骨架 */
+function mstPairs(idxs, pts) {
+  const m = idxs.length;
+  if (m < 2) return [];
+  const inTree = [0], out = [];
+  const d = function (a, b) {
+    const p = pts[idxs[a]], q = pts[idxs[b]];
+    return Math.hypot(p.x - q.x, p.y - q.y);
+  };
+  while (inTree.length < m) {
+    let ba = -1, bb = -1, bd = 1e18;
+    for (let i = 0; i < inTree.length; i++) {
+      for (let b = 0; b < m; b++) {
+        if (inTree.indexOf(b) >= 0) continue;
+        const dd = d(inTree[i], b);
+        if (dd < bd) { bd = dd; ba = inTree[i]; bb = b; }
+      }
+    }
+    if (bb < 0) break;
+    out.push([idxs[ba], idxs[bb]]);
+    inTree.push(bb);
+  }
+  return out;
+}
+
+/* 单圈的半径序列：144 个方向（画的时候再按弧长重采成 56 点），
+   取「本组球盘 ∪ 骨骼胶囊」的外沿，再被别组球、被划线挡住的地方收口，最后加一点极轻的手抖。
+
+   ⚠️ 骨架＝球心最小生成树 + 等距外扩。
+   只按各球圆盘取径向最外沿会漏：四颗一散开，球缝那条射线谁也碰不到，
+   半径直接塌到 0，圈就甩出尖刺斜穿自家球（实测 17% 的球被切在圈外）。 */
+/* 环形序列的闭运算：先滚动取最大、再滚动取最小。
+   窄于窗口的深谷被抬平，宽缓的起伏不动——用来去掉球缝处的尖刺。 */
+const CLOSE_W = 12, CLOSE_W_REM = 20;
+function closeSeq(arr, w) {
+  const m = arr.length, up = [], out = [];
+  for (let i = 0; i < m; i++) {
+    let v = -1e9;
+    for (let j = -w; j <= w; j++) { const q = arr[(i + j + m * 2) % m]; if (q > v) v = q; }
+    up.push(v);
+  }
+  for (let i = 0; i < m; i++) {
+    let v = 1e9;
+    for (let j = -w; j <= w; j++) { const q = up[(i + j + m * 2) % m]; if (q < v) v = q; }
+    out.push(v);
+  }
+  return out;
+}
+
+function loopGeom(g, pts, sz, stroke, W, H, seed) {
+  const n = g.idx.length, R = sz / 2, u = sz / 13;
+  const Rneed = R + 1.6 * u;     // 硬下限：球边再外 1.6u（多留一点，抵掉折线/贝塞尔的弦切误差）
+  const Rwant = R + 2.35 * u;    // 常态留白，笔尖舒展开的样子
+  const Rf = R + 1.0 * u;        // 别组的球：贴到它的边就收口
+  const lim = 1.2 * u;           // 划线这道墙的余量
+  const N = 144, th = [], rad = [], floor = [];
+
+  let cx = 0, cy = 0;
+  for (let i = 0; i < n; i++) { cx += pts[g.idx[i]].x; cy += pts[g.idx[i]].y; }
+  cx /= n; cy /= n;
+
+  const bones = mstPairs(g.idx, pts);
+
+  function foreignCap(ux, uy) {
+    let cap = 1e9;
+    for (let o = 0; o < pts.length; o++) {
+      if (g.idx.indexOf(o) >= 0) continue;
+      const ex = pts[o].x - cx, ey = pts[o].y - cy;
+      const ej = ex * ux + ey * uy;
+      const ep = ex * ex + ey * ey - ej * ej;
+      if (ep >= Rf * Rf || ej <= 0) continue;
+      const near = ej - Math.sqrt(Rf * Rf - ep);
+      if (near > 0 && near < cap) cap = near;
+    }
+    return cap;
+  }
+
+  function wallFor(ux, uy, r) {
+    if (!stroke || stroke.length < 2) return 1e9;
+    if (ux > 0.02 || ux < -0.02) {
+      const py = Math.max(1, Math.min(H - 1, cy + r * uy));
+      const bx = boundaryX(stroke, py);
+      return (g.side === 'L') ? (bx - lim - cx) / ux : (bx + lim - cx) / ux;
+    }
+    return 1e9;
+  }
+
+  /* 本组沿某方向的「外沿半径」：球盘 ∪ 骨骼胶囊（等距外扩）取径向最外点。
+     球盘保证四颗各自被整颗包住；胶囊把相邻两颗之间的缺口填成腰身，
+     圈于是在球缝里「收一下」而不是塌成尖刺。 */
+  function env(ux, uy, Rn) {
+    let best = 0;
+    for (let a = 0; a < n + bones.length * 6; a++) {
+      let px, py;
+      if (a < n) { const q = pts[g.idx[a]]; px = q.x; py = q.y; }
+      else {
+        const s = a - n, e = bones[(s / 6) | 0], tt = (s % 6) / 6;
+        const p1 = pts[e[0]], p2 = pts[e[1]];
+        px = p1.x + (p2.x - p1.x) * tt;
+        py = p1.y + (p2.y - p1.y) * tt;
+      }
+      const dx = px - cx, dy = py - cy;
+      const pj = dx * ux + dy * uy;
+      const pp = dx * dx + dy * dy - pj * pj;
+      if (pp > Rn * Rn) continue;
+      const f = pj + Math.sqrt(Rn * Rn - pp);
+      if (f > best) best = f;
+    }
+    return best;
+  }
+
+  /* 先把「必需半径」与「舒适半径」逐方向算成序列 */
+  const M0 = [], W0 = [];
+  /* 凸包外扩（支撑函数）：与胶囊加权，把「两球之间的公切线」这段直边拉成弧，
+     圈于是介于「紧贴四球」与「整团凸起」之间，既不至于包进邻球，也不显出生硬的多边形 */
+  function convexR(ux, uy, d) {
+    let proj = -1e9;
+    for (let a = 0; a < n; a++) {
+      const q = pts[g.idx[a]];
+      const pj = (q.x - cx) * ux + (q.y - cy) * uy;
+      if (pj > proj) proj = pj;
+    }
+    return Math.max(2 * u, proj + d);
+  }
+  const MIX = 0.84;      // 胶囊占比：1=纯胶囊（最贴合），0=纯凸包（最圆但最大）
+
+  for (let k = 0; k < N; k++) {
+    const t = k / N * Math.PI * 2;
+    const ux = Math.cos(t), uy = Math.sin(t);
+    let m0 = MIX * env(ux, uy, Rneed) + (1 - MIX) * convexR(ux, uy, Rneed);
+    let w0 = MIX * env(ux, uy, Rwant) + (1 - MIX) * convexR(ux, uy, Rwant);
+    if (m0 < 2 * u) m0 = 2 * u;
+    if (w0 < m0) w0 = m0;
+    M0.push(m0); W0.push(w0);
+  }
+
+  /* 闭运算（滚动最大 → 滚动最小）：只填平「窄而深」的谷，宽缓的腰身原样保留。
+     球缝里那条射线谁也碰不到，径向半径会塌成个位数，圈就在那里甩出尖刺与直角；
+     把窄谷抬平之后，圈既仍贴着四颗球（不去包邻球），又不会啃出手套形。 */
+  const cw = g.rem ? CLOSE_W_REM : CLOSE_W;
+  const M1 = closeSeq(M0, cw), W1 = closeSeq(W0, cw);
+
+  for (let k = 0; k < N; k++) {
+    const t = k / N * Math.PI * 2;
+    const ux = Math.cos(t), uy = Math.sin(t);
+
+    const must = M1[k];
+    let want = W1[k];
+    if (want < must) want = must;
+
+    const wob = (0.42 + 0.3 * Math.sin(3 * t + seed * 1.7) + 0.18 * Math.sin(7 * t + seed * 4.3)) * u;
+    let r = want + wob;
+
+    /* 收口：邻球 / 划线，但不得压进 must 以内 */
+    const capF = foreignCap(ux, uy);
+    if (capF < r) r = capF;
+    const wall = wallFor(ux, uy, r);
+    if (wall > 0 && wall < r) r = wall;
+    if (r < must) r = must;
+
+    floor.push(must);
+    rad.push(r);
+    th.push(t);
+  }
+
+  /* 半径序列轻微平滑，抹掉台阶，像笔尖带出来的圆润 */
+  const sm = rad.slice();
+  for (let k2 = 0; k2 < N; k2++) {
+    sm[k2] = (rad[(k2 - 1 + N) % N] + rad[k2] * 2 + rad[(k2 + 1) % N]) / 4;
+  }
+
+  /* 平滑会往里收，先把手绘的鼓胀补回、再按 must 保底；
+     收口只能发生在 must 之外，否则自家球又被切了 */
+  for (let k5 = 0; k5 < N; k5++) {
+    const ux5 = Math.cos(th[k5]), uy5 = Math.sin(th[k5]);
+    if (sm[k5] < floor[k5]) sm[k5] = floor[k5];
+    const cap5 = foreignCap(ux5, uy5);
+    if (cap5 >= floor[k5] && cap5 < sm[k5]) sm[k5] = cap5;
+    const wall5 = wallFor(ux5, uy5, sm[k5]);
+    if (wall5 >= floor[k5] && wall5 < sm[k5]) sm[k5] = wall5;
+  }
+
+  /* 144 个方向只是「算」的密度；画的时候按弧长重采成 56 点：
+     形状不变，贝塞尔段数省三分之二（淡入时每 33ms 全量重绘）。
+     必须重采而不是直接稀疏采样——把 144 点隔一个取一个，弦又会把球切掉。 */
+  const dense = [];
+  for (let k3 = 0; k3 < N; k3++) {
+    dense.push({ x: cx + sm[k3] * Math.cos(th[k3]), y: cy + sm[k3] * Math.sin(th[k3]) });
+  }
+  const segLen = [], acc = [];
+  let total = 0;
+  for (let i2 = 0; i2 < N; i2++) {
+    const a = dense[i2], b = dense[(i2 + 1) % N];
+    const d = Math.hypot(b.x - a.x, b.y - a.y) || 1e-6;
+    segLen.push(d); total += d; acc.push(total);
+  }
+  const M = 56, outPts = [], outTh = [], outNeed = [];
+  let cur = 0;
+  for (let i3 = 0; i3 < M; i3++) {
+    const target = total * i3 / M;
+    while (cur < N - 1 && acc[cur] < target) cur++;
+    const prev = cur === 0 ? 0 : acc[cur - 1];
+    const t = Math.max(0, Math.min(1, (target - prev) / segLen[cur]));
+    const a = dense[cur], b = dense[(cur + 1) % N];
+    const px = a.x + (b.x - a.x) * t, py = a.y + (b.y - a.y) * t;
+    outPts.push({ x: px, y: py });
+    outTh.push(Math.atan2(py - cy, px - cx));
+    outNeed.push(Math.max(floor[cur], floor[(cur + 1) % N]));
+  }
+
+  /* 折角抻圆：反复取邻点均值（凹陷处被拉平），一旦收进球边以内就顶回下限。
+     这样球缝里的尖角被抹成圆弧，球外侧的鼓胀又不会被削掉。 */
+  for (let pass = 0; pass < 7; pass++) {
+    const tmp = [];
+    for (let i4 = 0; i4 < M; i4++) {
+      const a = outPts[(i4 - 1 + M) % M], b = outPts[i4], c2 = outPts[(i4 + 1) % M];
+      tmp.push({ x: (a.x + 2 * b.x + c2.x) / 4, y: (a.y + 2 * b.y + c2.y) / 4 });
+    }
+    for (let i5 = 0; i5 < M; i5++) {
+      const q = tmp[i5];
+      const dx = q.x - cx, dy = q.y - cy;
+      const d = Math.hypot(dx, dy) || 1e-6;
+      /* 按「新方向」重新算所需半径——点被拉偏了角度，旧的下限就不作数了 */
+      const need = Math.max(outNeed[i5], env(dx / d, dy / d, Rneed));
+      if (d < need) {
+        const k = need / d;
+        q.x = cx + dx * k; q.y = cy + dy * k;
+      }
+      outPts[i5] = q;
+    }
+  }
+  for (let i6 = 0; i6 < M; i6++) outTh[i6] = Math.atan2(outPts[i6].y - cy, outPts[i6].x - cx);
+
+  return {
+    cx: cx, cy: cy, th: outTh, rad: outPts.map(function (p) { return Math.hypot(p.x - cx, p.y - cy); }),
+    need: outNeed,          // 硬下限（球边 + 1.6u），圈圈互让时也不许越过去
+    pts: outPts, side: g.side, rem: g.rem
+  };
+}
+
+function insidePoly(p, poly) {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    if (((poly[i].y > p.y) !== (poly[j].y > p.y)) &&
+      (p.x < (poly[j].x - poly[i].x) * (p.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) c = !c;
+  }
+  return c;
+}
+
+/* 圈与圈互不穿插：谁的点落进别人的圈里，就把那一点往自家中心收，
+   但收不过自家球的硬下限——宁可两圈稍稍蹭上，也不能把球漏在圈外。
+   先用包围盒筛掉大半不相干的圈对，整页 13 个圈也能压到几毫秒。 */
+function avoidCross(loops) {
+  const boxes = loops.map(function (l) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < l.pts.length; i++) {
+      const p = l.pts[i];
+      if (p.x < x0) x0 = p.x;
+      if (p.x > x1) x1 = p.x;
+      if (p.y < y0) y0 = p.y;
+      if (p.y > y1) y1 = p.y;
+    }
+    return { x0: x0, y0: y0, x1: x1, y1: y1 };
+  });
+
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    for (let a = 0; a < loops.length; a++) {
+      for (let b = a + 1; b < loops.length; b++) {
+        const ba = boxes[a], bb = boxes[b];
+        if (ba.x1 < bb.x0 || bb.x1 < ba.x0 || ba.y1 < bb.y0 || bb.y1 < ba.y0) continue;
+        const A = loops[a], B = loops[b];
+        for (let side = 0; side < 2; side++) {
+          const me = side ? B : A, other = side ? A : B;
+          const ob = side ? ba : bb;
+          for (let i = 0; i < me.pts.length; i++) {
+            const p = me.pts[i];
+            if (p.x < ob.x0 || p.x > ob.x1 || p.y < ob.y0 || p.y > ob.y1) continue;
+            if (!insidePoly(p, other.pts)) continue;
+            let nr = me.rad[i] - 1.1;
+            if (nr < me.need[i]) nr = me.need[i];
+            if (nr < me.rad[i] - 1e-6) {
+              me.rad[i] = nr;
+              me.pts[i] = { x: me.cx + nr * Math.cos(me.th[i]), y: me.cy + nr * Math.sin(me.th[i]) };
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+/* 一组 group → 一圈闭合曲线（弧长重采 56 点 → 三次贝塞尔段） */
+function buildLoops(groups, pts, sz, stroke, W, H) {
+  const loops = [];
+  for (let i = 0; i < groups.length; i++) {
+    const seed = i * 1.37 + (groups[i].side === 'L' ? 0.4 : 2.1);
+    loops.push(loopGeom(groups[i], pts, sz, stroke, W, H, seed));
+  }
+  avoidCross(loops);
+  return loops.map(function (lp) {
+    return { rem: lp.rem, side: lp.side, poly: lp.pts, segs: curveSegs(lp.pts) };
+  });
+}
+
+/* 闭合折线（弧长重采 56 点）→ Catmull-Rom 三次贝塞尔段，供 canvas 逐段画 */
+function curveSegs(p) {
+  const n = p.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const p0 = p[(i - 1 + n) % n], p1 = p[i], p2 = p[(i + 1) % n], p3 = p[(i + 2) % n];
+    out.push({
+      c1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
+      c2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 },
+      p: p2
+    });
+  }
+  return out;
+}
+
+module.exports = {
+  takeNearest: takeNearest,
+  cluster4: cluster4,
+  groupBalls: groupBalls,
+  buildLoops: buildLoops,
+  curveSegs: curveSegs,
+  boundaryX: boundaryX
+};
+
+});
+__def('utils/store.js', function(module, exports, require){
+// utils/store.js —— 占例本地存储
+// KEY 一旦发布就不要改：小程序端为 wx storage，Android 端由 runtime 映射到
+// app 私有文件 + WebView localStorage。改 KEY 会让旧版本占例读不出来。
+const KEY = 'dayan_sessions_v1';
+const MAX = 100;
+
+// 向后兼容：旧版本记录没有 question 等字段时补默认值，且保留记录上的其它
+// 字段原样（未来版本新增字段也不会被这里抹掉）。
+function normalize(item) {
+  if (!item || typeof item !== 'object') return null;
+  const r = Object.assign({}, item);
+  r.id = r.id || ('s' + (r.createdAt || Date.now()));
+  r.createdAt = r.createdAt || Date.now();
+  if (!Array.isArray(r.values)) r.values = [];
+  if (!Array.isArray(r.changeLabels)) r.changeLabels = [];
+  if (typeof r.question !== 'string') r.question = '';
+  else r.question = r.question.trim();
+  return r;
+}
+
+function list() {
+  try {
+    const all = wx.getStorageSync(KEY);
+    if (!Array.isArray(all)) return [];
+    return all.map(normalize).filter(function (x) { return !!x; });
+  } catch (e) {
+    return [];
+  }
+}
+
+function save(session) {
+  const all = list();
+  const record = normalize(Object.assign({}, session, {
+    id: session.id || ('s' + Date.now() + Math.floor(Math.random() * 10000)),
+    createdAt: session.createdAt || Date.now()
+  }));
+  const rest = all.filter(function (item) { return item.id !== record.id; });
+  rest.unshift(record);
+  try {
+    wx.setStorageSync(KEY, rest.slice(0, MAX));
+  } catch (e) {
+    return { data: null, error: 'CLIENT_EXCEPTION' };
+  }
+  return { data: record, error: null };
+}
+
+function get(id) {
+  const all = list();
+  for (let i = 0; i < all.length; i++) {
+    if (all[i].id === id) return all[i];
+  }
+  return null;
+}
+
+function remove(id) {
+  const rest = list().filter(function (item) { return item.id !== id; });
+  try {
+    wx.setStorageSync(KEY, rest);
+  } catch (e) {
+    return { data: null, error: 'CLIENT_EXCEPTION' };
+  }
+  return { data: true, error: null };
+}
+
+// 只改所占事项，不动卦象数据（供后续版本扩展）
+function setQuestion(id, question) {
+  const all = list();
+  let hit = false;
+  const next = all.map(function (item) {
+    if (item.id !== id) return item;
+    hit = true;
+    return Object.assign({}, item, { question: String(question || '').trim() });
+  });
+  if (!hit) return { data: null, error: 'NOT_FOUND' };
+  try {
+    wx.setStorageSync(KEY, next);
+    return { data: true, error: null };
+  } catch (e) {
+    return { data: null, error: 'CLIENT_EXCEPTION' };
+  }
+}
+
+function formatTime(ts) {
+  const d = new Date(ts || Date.now());
+  const pad = function (n) { return n < 10 ? ('0' + n) : ('' + n); };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+    ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+module.exports = {
+  list: list,
+  save: save,
+  get: get,
+  remove: remove,
+  setQuestion: setQuestion,
+  formatTime: formatTime
+};
+
+});
+__def('utils/yaoci.js', function(module, exports, require){
+// utils/yaoci.js —— 六十四卦三百八十四爻爻辞（通行本·简体）
+// 数据来源：freizl/yijing 仓库 zh-CN/64gua.json；古籍原文属公有领域。
+// 按卦序号（1~64）索引，每卦 6 条，顺序为初爻→上爻；已剥离爻题前缀。
+// 乾（1）之「用九」、坤（2）之「用六」单独存于 YONG_TEXTS。
+
+const YAO_TEXTS = {
+  1: ["潜龙，勿用。","见龙在田，利见大人。","君子终日乾乾，夕惕若，厉，无咎。","或跃在渊，无咎。","飞龙在天，利见大人。","亢龙有悔。"], // 乾为天
+  2: ["履霜，坚冰至。","直，方，大，不习无不利。","含章可贞。或从王事，无成有终。","括囊；无咎，无誉。","黄裳，元吉。","龙战于野，其血玄黄。"], // 坤为地
+  3: ["磐桓；利居贞，利建侯。","屯如邅如，乘马班如。匪寇婚媾，女子贞不字，十年乃字。","即鹿无虞，惟入于林中，君子几不如舍，往吝。","乘马班如，求婚媾，往吉，无不利。","屯其膏，小贞吉，大贞凶。","乘马班如，泣血涟如。"], // 水雷屯
+  4: ["发蒙，利用刑人，用说桎梏，以往吝。","包蒙吉；纳妇吉；子克家。","勿用娶女；见金夫，不有躬，无攸利。","困蒙，吝。","童蒙，吉。","击蒙；不利为寇，利御寇。"], // 山水蒙
+  5: ["需于郊。利用恒，无咎。","需于沙。小有言，终吉。","需于泥，致寇至。","需于血，出自穴。","需于酒食，贞吉。","入于穴，有不速之客三人来，敬之终吉。"], // 水天需
+  6: ["不永所事，小有言，终吉。","不克讼，归而逋，其邑人三百户，无眚。","食旧德，贞厉，终吉，或从王事，无成。","不克讼，复即命渝，安贞吉。","讼元吉。","或锡之鞶带，终朝三褫之。"], // 天水讼
+  7: ["师出以律，否臧凶。","在师中吉，无咎，王三锡命。","师或舆尸，凶。","师左次，无咎。","田有禽，利执言，无咎。长子帅师，弟子舆尸，贞凶。","大君有命，开国承家，小人勿用。"], // 地水师
+  8: ["有孚，比之，无咎。有孚盈缶，终来有他，吉。","比之自内，贞吉。","比之匪人。","外比之，贞吉。","显比，王用三驱，失前禽。邑人不诫，吉。","比之无首，凶。"], // 水地比
+  9: ["复自道，何其咎，吉。","牵复，吉。","舆说辐，夫妻反目。","有孚，血去惕出，无咎。","有孚挛如，富以其邻。","既雨既处，尚德载，妇贞厉。月几望，君子征凶。"], // 风天小畜
+  10: ["素履，往无咎。","履道坦坦，幽人贞吉。","眇能视，跛能履，履虎尾，咥人，凶。武人为于大君。","履虎尾，诉诉，终吉。","夬履，贞厉。","视履考祥，其旋元吉。"], // 天泽履
+  11: ["拔茅茹，以其彙，征吉。","包荒，用馮河，不遐遺，朋亡，得尚于中行。","无平不陂，无往不復，艱貞无咎。勿恤其孚，于食有福。","翩翩，不富，以其鄰，不戒以孚。","帝乙歸妹，以祉元吉。","城復于隍，勿用師。自邑告命，貞吝。"], // 地天泰
+  12: ["拔茅茹，以其汇，贞吉亨。","包承。小人吉，大人否，亨。","包羞。","有命，无咎，畴离祉。","休否，大人吉。其亡其亡，系于苞桑。","倾否，先否后喜。"], // 天地否
+  13: ["同人于门，无咎。","同人于宗，吝。","伏戎于莽，升其高陵，三岁不兴。","乘其墉，弗克攻，吉。","同人，先号啕而后笑。大师克相遇。","同人于郊，无悔。"], // 天火同人
+  14: ["无交害，匪咎，艰则无咎。","同人于宗，吝。","公用亨于天子，小人弗克。","匪其彭，无咎。","厥孚交如，威如；吉。","自天佑之，吉无不利。"], // 火天大有
+  15: ["谦谦君子，用涉大川，吉。","鸣谦，贞吉。","劳谦，君子有终，吉。","无不利，撝谦。","不富，以其邻，利用侵伐，无不利。","鸣谦，利用行师，征邑国。"], // 地山谦
+  16: ["鸣豫，凶。","介于石，不终日，贞吉。","盱豫，悔。迟有悔。","由豫，大有得。勿疑。朋盍簪。","贞疾，恒不死。","冥豫，成有渝，无咎。"], // 雷地豫
+  17: ["官有渝，贞吉。出门交有功。","系小子，失丈夫。","系丈夫，失小子。随有求得，利居贞。","随有获，贞凶。有孚在道，以明，何咎。","孚于嘉，吉。","拘系之，乃从维之。王用亨于西山。"], // 泽雷随
+  18: ["干父之蛊，有子，考无咎，厉终吉。","干母之蛊，不可贞。","干父之蛊，小有悔，无大咎。","裕父之蛊，往见吝。","干父之蛊，用誉。","不事王侯，高尚其事。"], // 山风蛊
+  19: ["咸临，贞吉。","咸临，吉无不利。","甘临，无攸利。既忧之，无咎。","至临，无咎。","知临，大君之宜，吉。","敦临，吉无咎。"], // 地泽临
+  20: ["童观，小人无咎，君子吝。","窥观，利女贞。","观我生，进退。","观国之光，利用宾于王。","观我生，君子无咎。","观其生，君子无咎。"], // 风地观
+  21: ["屦校灭趾，无咎。","噬肤灭鼻，无咎。","噬腊肉，遇毒；小吝，无咎。","噬乾胏，得金矢，利艰贞，吉。","噬乾肉，得黄金，贞厉，无咎。","何校灭耳，凶。"], // 火雷噬嗑
+  22: ["贲其趾，舍车而徒。","贲其须。","贲如濡如，永贞吉。","贲如皤如，白马翰如，匪寇婚媾。","贲于丘园，束帛戋戋，吝，终吉。","白贲，无咎。"], // 山火贲
+  23: ["剥床以足，蔑贞凶。","剥床以辨，蔑贞凶。","剥之，无咎。","剥床以肤，凶。","贯鱼，以宫人宠，无不利。","硕果不食，君子得舆，小人剥庐。"], // 山地剥
+  24: ["不复远，无祗悔，元吉。","休复，吉。","频复，厉无咎。","中行独复。","敦复，无悔。","迷复，凶，有灾眚。用行师，终有大败，以其国君，凶；至于十年，不克征。"], // 地雷复
+  25: ["无妄，往吉。","不耕获，不灾畲，则利有攸往。","无妄之灾，或系之牛，行人之得，邑人之灾。","可贞，无咎。","无妄之疾，勿药有喜。","无妄，行有眚，无攸利。"], // 天雷无妄
+  26: ["有厉利已。","舆说輹。","良马逐，利艰贞。曰闲舆卫，利有攸往。","童牛之牿，元吉。","豶豕之牙，吉。","何天之衢，亨。"], // 山天大畜
+  27: ["舍尔灵龟，观我朵颐，凶。","颠颐，拂经，于丘颐，征凶。","拂颐，贞凶，十年勿用，无攸利。","颠颐，吉，虎视眈眈，其欲逐逐，无咎。","拂经，居贞吉，不可涉大川。","由颐，厉吉，利涉大川。"], // 山雷颐
+  28: ["藉用白茅，无咎。","枯杨生稊，老夫得其女妻，无不利。","栋桡，凶。","栋隆，吉；有它吝。","枯杨生华，老妇得士夫，无咎无誉。","过涉灭顶，凶，无咎。"], // 泽风大过
+  29: ["习坎，入于坎窞，凶。","坎有险，求小得。","来之坎坎，险且枕，入于坎窞，勿用。","樽酒簋贰，用缶，纳约自牖，终无咎。","坎不盈，祗既平，无咎。","系用徽纆，置于丛棘，三岁不得，凶。"], // 坎为水
+  30: ["履错然，敬之无咎。","黄离，元吉。","日昃之离，不鼓缶而歌，则大耋之嗟，凶。","突如其来如，焚如，死如，弃如。","出涕沱若，戚嗟若，吉。","王用出征，有嘉折首，获匪其丑，无咎。"], // 离为火
+  31: ["咸其拇。","咸其腓，凶，居吉。","咸其股，执其随，往吝。","贞吉，悔亡，憧憧往来，朋从尔思。","咸其脢，无悔。","咸其辅颊舌。"], // 泽山咸
+  32: ["浚恒，贞凶，无攸利。","悔亡。","不恒其德，或承之羞，贞吝。","田无禽。","恒其德，贞，妇人吉，夫子凶。","振恒，凶。"], // 雷风恒
+  33: ["遯尾，厉，勿用有攸往。","执之用黄牛之革，莫之胜说。","系遯，有疾厉，畜臣妾吉。","好遯，君子吉，小人否。","嘉遯，贞吉。","肥遯，无不利。"], // 天山遁
+  34: ["壮于趾，征凶，有孚。","贞吉。","小人用壮，君子用罔，贞厉。羝羊触藩，羸其角。","贞吉悔亡，藩决不羸，壮于大舆之輹。","丧羊于易，无悔。","羝羊触藩，不能退，不能遂，无攸利，艰则吉。"], // 雷天大壮
+  35: ["晋如，摧如，贞吉。罔孚，裕无咎。","晋如，愁如，贞吉。受兹介福，于其王母。","众允，悔亡。","晋如硕鼠，贞厉。","悔亡，失得勿恤，往吉，无不利。","晋其角，维用伐邑，厉吉无咎，贞吝。"], // 火地晋
+  36: ["明夷于飞，垂其翼。君子于行，三日不食，有攸往，主人有言。","明夷，夷于左股，用拯马壮，吉。","明夷于南狩，得其大首，不可疾贞。","入于左腹，获明夷之心，出于门庭。","箕子之明夷，利贞。","不明晦，初登于天，后入于地。"], // 地火明夷
+  37: ["闲有家，悔亡。","无攸遂，在中馈，贞吉。","家人嗃嗃，悔厉吉；妇子嘻嘻，终吝。","富家，大吉。","王假有家，勿恤，往吉。","有孚威如，终吉。"], // 风火家人
+  38: ["悔亡，丧马勿逐，自复；见恶人无咎。","遇主于巷，无咎。","见舆曳，其牛掣，其人天且劓，无初有终。","睽孤，遇元夫，交孚，厉无咎。","悔亡，厥宗噬肤，往何咎。","睽孤，见豕负涂，载鬼一车，先张之弧，后说之弧，匪寇婚媾，往遇雨则吉。"], // 火泽睽
+  39: ["往蹇，来誉。","王臣蹇蹇，匪躬之故。","往蹇来反。","往蹇来连。","大蹇朋来。","往蹇来硕，吉；利见大人。"], // 水山蹇
+  40: ["无咎。","田获三狐，得黄矢，贞吉。","负且乘，致寇至，贞吝。","解而拇，朋至斯孚。","君子维有解，吉；有孚于小人。","公用射隼于高墉之上，获之，无不利。"], // 雷水解
+  41: ["巳事遄往，无咎，酌损之。","利贞，征凶，弗损，益之。","三人行，则损一人；一人行，则得其友。","损其疾，使遄有喜，无咎。","或益之，十朋之龟弗克违，元吉。","弗损益之，无咎，贞吉，有攸往，得臣无家。"], // 山泽损
+  42: ["利用为大作，元吉，无咎。","或益之，十朋之龟弗克违，永贞吉。王用享于帝，吉。","益之用凶事，无咎。有孚中行，告公用圭。","中行，告公从。利用为依迁国。","有孚惠心，勿问元吉。有孚惠我德。","莫益之，或击之，立心勿恒，凶。"], // 风雷益
+  43: ["壮于前趾，往不胜为咎。","惕号，莫夜有戎，勿恤。","壮于頄，有凶。君子夬夬，独行，遇雨，若濡，有愠，无咎。","臀无肤，其行次且。牵羊悔亡，闻言不信。","苋陆夬夬，中行无咎。","无号，终有凶。"], // 泽天夬
+  44: ["系于金柅，贞吉，有攸往，见凶，羸豕孚踟躅。","包有鱼，无咎，不利宾。","臀无肤，其行次且，厉，无大咎。","包无鱼，起凶。","以杞包瓜，含章，有陨自天。九五：以杞包瓜，含章，有陨自天。","姤其角，吝，无咎。"], // 天风姤
+  45: ["有孚不终，乃乱乃萃，若号一握为笑，勿恤，往无咎。","引吉，无咎，孚乃利用禴。","萃如，嗟如，无攸利，往无咎，小吝。","大吉，无咎。","萃有位，无咎。匪孚，元永贞，悔亡。","赍咨涕洟，无咎。"], // 泽地萃
+  46: ["允升，大吉。","孚乃利用禴，无咎。","升虚邑。","王用亨于岐山，吉无咎。","贞吉，升阶。","冥升，利于不息之贞。"], // 地风升
+  47: ["臀困于株木，入于幽谷，三岁不觌。","困于酒食，朱绂方来，利用享祀，征凶，无咎。","困于石，据于蒺藜，入于其宫，不见其妻，凶。","来徐徐，困于金车，吝，有终。","劓刖，困于赤绂，乃徐有说，利用祭祀。","困于葛藟，于臲卼，曰动悔。有悔，征吉。"], // 泽水困
+  48: ["井泥不食，旧井无禽。","井谷射鲋，瓮敝漏。","井渫不食，为我心恻，可用汲，王明，并受其福。","井甃，无咎。","井冽，寒泉食。","井收勿幕，有孚元吉。"], // 水风井
+  49: ["巩用黄牛之革。","巳日乃革之，征吉，无咎。","征凶，贞厉，革言三就，有孚。","悔亡，有孚改命，吉。","大人虎变，未占有孚。","君子豹变，小人革面，征凶，居贞吉。"], // 泽火革
+  50: ["鼎颠趾，利出否，得妾以其子，无咎。","鼎有实，我仇有疾，不我能即，吉。","鼎耳革，其行塞，雉膏不食，方雨亏悔，终吉。","鼎折足，覆公餗，其形渥，凶。","鼎黄耳，金铉，利贞。","鼎玉铉，大吉，无不利。"], // 火风鼎
+  51: ["震来虩虩，后笑言哑哑，吉。","震来厉，亿丧贝，跻于九陵，勿逐，七日得。","震苏苏，震行无眚。","震遂泥。","震往来厉，亿无丧，有事。","震索索，视矍矍，征凶。震不于其躬，于其邻，无咎。婚媾有言。"], // 震为雷
+  52: ["艮其趾，无咎，利永贞。","艮其腓，不拯其随，其心不快。","艮其限，列其夤，厉薰心。","艮其身，无咎。","艮其辅，言有序，悔亡。","敦艮，吉。"], // 艮为山
+  53: ["鸿渐于干，小子厉，有言，无咎。","鸿渐于磐，饮食衎衎，吉。","鸿渐于陆，夫征不复，妇孕不育，凶；利御寇。","鸿渐于木，或得其桷，无咎。","鸿渐于陵，妇三岁不孕，终莫之胜，吉。","鸿渐于陆，其羽可用为仪，吉。"], // 风山渐
+  54: ["归妹以娣，跛能履，征吉。","眇能视，利幽人之贞。","归妹以须，反归以娣。","归妹愆期，迟归有时。","帝乙归妹，其君之袂，不如其娣之袂良，月几望，吉。","女承筐无实，士刲羊无血，无攸利。"], // 雷泽归妹
+  55: ["遇其配主，虽旬无咎，往有尚。","丰其蔀，日中见斗，往得疑疾，有孚发若，吉。","丰其沛，日中见沫，折其右肱，无咎。","丰其蔀，日中见斗，遇其夷主，吉。","来章，有庆誉，吉。","丰其屋，蔀其家，闚其户，阒其无人，三岁不觌，凶。"], // 雷火丰
+  56: ["旅琐琐，斯其所取灾。","旅即次，怀其资，得童仆贞。","旅焚其次，丧其童仆，贞厉。","旅于处，得其资斧，我心不快。","射雉一矢亡，终以誉命。","鸟焚其巢，旅人先笑后号啕。丧牛于易，凶。"], // 火山旅
+  57: ["进退，利武人之贞。","巽在床下，用史巫纷若，吉，无咎。","频巽，吝。","悔亡，田获三品。","贞吉悔亡，无不利。无初有终，先庚三日，后庚三日，吉。","巽在床下，丧其资斧，贞凶。"], // 巽为风
+  58: ["和兑，吉。","孚兑，吉，悔亡。","来兑，凶。","商兑，未宁，介疾有喜。","孚于剥，有厉。","引兑。"], // 兑为泽
+  59: ["用拯马壮，吉。","涣奔其机，悔亡。","涣其躬，无悔。","涣其群，元吉。涣有丘，匪夷所思。","涣汗其大号，涣王居，无咎。","涣其血，去逖出，无咎。"], // 风水涣
+  60: ["不出户庭，无咎。","不出门庭，凶。","不节若，则嗟若，无咎。","安节，亨。","甘节，吉；往有尚。","苦节，贞凶，悔亡。"], // 水泽节
+  61: ["虞吉，有它不燕。","鸣鹤在阴，其子和之，我有好爵，吾与尔靡之。","得敌，或鼓或罢，或泣或歌。","月几望，马匹亡，无咎。","有孚挛如，无咎。","翰音登于天，贞凶。"], // 风泽中孚
+  62: ["飞鸟以凶。","过其祖，遇其妣；不及其君，遇其臣；无咎。","弗过防之，从或戕之，凶。","无咎，弗过遇之。往厉必戒，勿用永贞。","密云不雨，自我西郊，公弋取彼在穴。","弗遇过之，飞鸟离之，凶，是谓灾眚。"], // 雷山小过
+  63: ["曳其轮，濡其尾，无咎。","妇丧其茀，勿逐，七日得。","高宗伐鬼方，三年克之，小人勿用。","繻有衣袽，终日戒。","东邻杀牛，不如西邻之禴祭，实受其福。","濡其首，厉。"], // 水火既济
+  64: ["濡其尾，吝。","曳其轮，贞吉。","未济，征凶，利涉大川。","贞吉，悔亡，震用伐鬼方，三年有赏于大国。","贞吉，无悔，君子之光，有孚，吉。","有孚于饮酒，无咎，濡其首，有孚失是。"], // 火水未济
+};
+
+const YONG_TEXTS = {
+  1: "见群龙无首，吉。",
+  2: "利永贞。"
+};
+
+function yaoTexts(no) { return YAO_TEXTS[no] || []; }
+function yongText(no) { return YONG_TEXTS[no] || ''; }
+
+module.exports = {
+  YAO_TEXTS: YAO_TEXTS,
+  YONG_TEXTS: YONG_TEXTS,
+  yaoTexts: yaoTexts,
+  yongText: yongText
+};
+
+});
+__def('pages/index/index.js', function(module, exports, require){
+__cur = "pages/index/index";
+const dayan = require('../../utils/dayan.js');
+
+Page({
+  data: {
+    balls: [],
+    ballSize: 30
+  },
+
+  onLoad: function () {
+    // 以 rpx 为单位生成散而不叠的白球堆
+    const pts = dayan.layoutBalls(20, 686, 300, 30, 12);
+    const balls = pts.map(function (p, i) {
+      return { id: 'b' + i, x: Math.round(p.x), y: Math.round(p.y) };
+    });
+    this.setData({ balls: balls });
+  },
+
+  startDivine: function () {
+    wx.navigateTo({ url: '/pages/divine/divine' });
+  },
+
+  goHistory: function () {
+    wx.navigateTo({ url: '/pages/history/history' });
+  }
+});
+
+});
+__def('pages/divine/divine.js', function(module, exports, require){
+__cur = "pages/divine/divine";
+const dayan = require('../../utils/dayan.js');
+const loops = require('../../utils/loops.js');
+
+const YAO = ['初', '二', '三', '四', '五', '上'];
+const CN = { 6: '六', 7: '七', 8: '八', 9: '九' };
+const BIAN = ['一变', '二变', '三变'];
+
+/* 一爻步骤：首爻八步（含第 1 步五十取一），太极既立之后七步。
+   步骤名一律「阶段 · 动作」，不再带 S1–S8 编号；三变以「1变 / 2变 / 3变」领起。 */
+function buildSteps(withHang) {
+  const s = [];
+  if (withHang) s.push({ k: 'hang', lab: '挂一', full: '起筮 · 挂一' });
+  for (let b = 0; b < 3; b++) {
+    const lead = (b + 1) + '变 · ';
+    s.push({ k: 'split', b: b, lab: '分二挂一', full: lead + '分二挂一' });
+    s.push({ k: 'count', b: b, lab: '揲四归奇', full: lead + '揲四归奇' });
+  }
+  s.push({ k: 'yao', lab: '成爻', full: '三变既毕 · 成爻' });
+  return s;
+}
+
+Page({
+  data: {
+    step: 0,
+    stepKey: 'hang',
+    metaText: '初爻 · 起筮',
+    stepName: '起筮 · 挂一',
+    rails: [],
+    yaoDots: [],
+    pillars: [],
+
+    total: 50,
+    pileCount: 50,
+    taijiOn: false,
+    balls: [],
+    leftCount: 0,
+    rightCount: 0,
+    splitDone: false,
+    chips: [],
+
+    formulaText: '',
+    formulaNote: '',
+
+    yaoRemain: 0,
+    yaoNum: '',
+    yaoName: '',
+    yaoYang: true,
+
+    fly: [],
+    hint: '',
+    btnText: '下 一 步',
+    btnWait: false,
+    dia: 500,
+    ballSize: 26
+  },
+
+  onLoad: function () {
+    const sys = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync());
+    this.rpx = sys.windowWidth / 750;
+    this.dpr = sys.pixelRatio || 2;
+
+    /* 圆席直径：横向让出三变柱 112rpx + 页边距 18rpx×2 + 间隙 6rpx → 596；
+       纵向按屏幕可用高度回收（头部/记录带/太极/步骤轨/提示/按钮约 680rpx），
+       屏幕矮的机型自动缩，绝不把按钮顶出屏幕 */
+    const wLimit = 596;
+    const avail = Math.round((sys.windowHeight || 650) / this.rpx);
+    const hLimit = avail - 640;
+    this.diaRpx = Math.max(520, Math.min(wLimit, hLimit));
+    this.dia = Math.round(this.diaRpx * this.rpx);
+
+    this.sz = Math.round(this.dia * Math.sqrt(0.155 / 49));   // 球径（px）
+    this.gap = Math.round(this.sz * 0.4);                     // 最小间隙（px）
+
+    this.values = [];
+    this.yaoIndex = 0;
+    this.taiji = false;                           // 太极之策是否已取（十八变通用一枚）
+    this.steps = buildSteps(true);
+
+    this.balls = [];                              // { id, cx, cy, cls }
+    this.pts = [];                                // 球心坐标
+    this.sides = [];                              // 'L' / 'R'
+    this.stroke = [];                             // 你画的线（圆席内坐标）
+    this.extSeg = [];                             // 两端延长到席外的虚线段
+    this.hang = -1;
+    this.changes = [];                            // 每变 {r1,r2,next,...}
+    this.totals = [49, 0, 0];
+    this.nextTotal = 0;
+    this.pillarInfo = [null, null, null];
+    this.loopList = [];
+    this.loopAl = [];
+    this.loopSt = [];
+    this.strokeAl = 1;                            // 你画的那条线的透明度（洗牌时一并淡出）
+    this.strokeSt = null;
+    this.seq = 0;
+
+    this.enterHang();
+  },
+
+  onReady: function () {
+    this.initInk();
+  },
+
+  onUnload: function () {
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    (this.timers || []).forEach(function (t) { clearTimeout(t); });
+    this.timers = [];
+  },
+
+  /* setTimeout 统一登记，卸载时一并清掉 */
+  /* 所有延时回调都绑在「当前这一爻」上：一旦进入新的一爻，旧回调一律作废。
+     否则上一爻归奇/洗牌/挂一动画遗留的 setTimeout 会在新爻铺好球之后才触发，
+     把刚铺满的圆席又清空、或直接推进到分二（用户看到的「演下一爻是空白」）。 */
+  later: function (fn, ms) {
+    if (!this.timers) this.timers = [];
+    const self = this;
+    const epoch = this.epoch || 0;
+    var id = setTimeout(function () {
+      self.timers = (self.timers || []).filter(function (x) { return x !== id; });
+      if ((self.epoch || 0) !== epoch) return;   // 已换爻，迟到回调不再改写界面
+      fn();
+    }, ms);
+    this.timers.push(id);
+    return id;
+  },
+
+  /* =========================================================
+     画布：你画的线 + 手绘圈
+     ========================================================= */
+  initInk: function () {
+    const self = this;
+    wx.createSelectorQuery().in(this)
+      .select('#ink')
+      .fields({ node: true, size: true })
+      .exec(function (res) {
+        if (!res || !res[0] || !res[0].node) return;
+        const canvas = res[0].node;
+        canvas.width = self.dia * self.dpr;
+        canvas.height = self.dia * self.dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(self.dpr, self.dpr);
+        self.ctx = ctx;
+        self.paint();
+      });
+  },
+
+  /* 笔宽等随球径等比缩放（原型 13px 球径下的标定值） */
+  u: function () { return this.sz / 13; },
+
+  paint: function () {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const W = this.dia, H = this.dia, u = this.u();
+    ctx.clearRect(0, 0, W, H);
+
+    /* 1. 各圈：手绘感的闭合曲线，余数那一撮实线加粗 + 淡底 */
+    for (let i = 0; i < this.loopList.length; i++) {
+      const a = this.loopAl[i];
+      if (!a || a < 0.01) continue;
+      const lp = this.loopList[i];
+      ctx.beginPath();
+      ctx.moveTo(lp.poly[0].x, lp.poly[0].y);
+      for (let k = 0; k < lp.segs.length; k++) {
+        const s = lp.segs[k];
+        ctx.bezierCurveTo(s.c1.x, s.c1.y, s.c2.x, s.c2.y, s.p.x, s.p.y);
+      }
+      ctx.closePath();
+      if (lp.rem) {
+        ctx.fillStyle = 'rgba(21,23,28,' + (0.055 * a).toFixed(3) + ')';
+        ctx.fill();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1.4 * u;
+        ctx.strokeStyle = 'rgba(21,23,28,' + (0.66 * a).toFixed(3) + ')';
+      } else {
+        ctx.setLineDash([3.4 * u, 3.2 * u]);
+        ctx.lineWidth = 1.05 * u;
+        ctx.strokeStyle = 'rgba(21,23,28,' + (0.40 * a).toFixed(3) + ')';
+      }
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    /* 2. 你画的那条线：原样保留，压在最上层（洗牌时随圈一起淡出） */
+    const sa = (this.strokeAl == null ? 1 : this.strokeAl);
+    if (this.stroke && this.stroke.length > 1 && sa > 0.01) {
+      ctx.beginPath();
+      ctx.moveTo(this.stroke[0].x, this.stroke[0].y);
+      for (let i = 1; i < this.stroke.length; i++) ctx.lineTo(this.stroke[i].x, this.stroke[i].y);
+      ctx.lineWidth = 1.9 * u;
+      ctx.strokeStyle = 'rgba(21,23,28,' + (0.92 * sa).toFixed(3) + ')';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      /* 3. 两端延长到席外的部分：细虚线，告诉占者「归属是按这条延长后的分界判的」 */
+      if (this.extSeg && this.extSeg.length) {
+        ctx.setLineDash([3.2 * u, 4.2 * u]);
+        ctx.lineWidth = 1.0 * u;
+        ctx.strokeStyle = 'rgba(21,23,28,' + (0.42 * sa).toFixed(3) + ')';
+        for (let e = 0; e < this.extSeg.length; e++) {
+          const g = this.extSeg[e];
+          ctx.beginPath();
+          ctx.moveTo(g.x1, g.y1);
+          ctx.lineTo(g.x2, g.y2);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+    }
+  },
+
+  inkTick: function () {
+    const now = Date.now();
+    let busy = false;
+    for (let i = 0; i < this.loopList.length; i++) {
+      const s = this.loopSt[i];
+      if (!s) continue;
+      if (now < s.t0) { busy = true; continue; }
+      const k = s.dur <= 0 ? 1 : Math.min(1, (now - s.t0) / s.dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      this.loopAl[i] = s.from + (s.to - s.from) * e;
+      if (k < 1) busy = true;
+    }
+    /* 划线也一起淡出：圈散、线消，与洗牌同时收尾 */
+    if (this.strokeSt) {
+      const s = this.strokeSt;
+      if (now < s.t0) busy = true;
+      else {
+        const k = s.dur <= 0 ? 1 : Math.min(1, (now - s.t0) / s.dur);
+        const e = 1 - Math.pow(1 - k, 3);
+        this.strokeAl = s.from + (s.to - s.from) * e;
+        if (k < 1) busy = true;
+      }
+    }
+    this.paint();
+    if (!busy) {
+      clearInterval(this.inkTimer);
+      this.inkTimer = null;
+      if (!this.loopVisible) {
+        this.loopList = []; this.loopAl = []; this.loopSt = [];
+        this.strokeSt = null;
+        this.strokeAl = 0;
+        this.stroke = [];
+        this.paint();
+      }
+    }
+  },
+
+  startInk: function () {
+    if (this.inkTimer) return;
+    const self = this;
+    this.inkTimer = setInterval(function () { self.inkTick(); }, 33);
+  },
+
+  /* 画圈：每圈错峰淡入 */
+  showLoops: function () {
+    if (!this.ctx) this.initInk();          // 首帧画布还没就绪时补一次
+    this.strokeAl = 1;
+    this.strokeSt = null;
+    const groups = loops.groupBalls(this.sides, this.pts, this.hang, this.sz);
+    this.loopList = loops.buildLoops(groups, this.pts, this.sz, this.stroke, this.dia, this.dia);
+    this.loopAl = this.loopList.map(function () { return 0; });
+    const now = Date.now();
+    this.loopSt = this.loopList.map(function (_, i) {
+      return { from: 0, to: 1, t0: now + 120 + i * 55, dur: 260 };
+    });
+    this.loopVisible = true;
+    this.startInk();
+  },
+
+  /* 淡出：圈与划线一起消，默认 280ms，洗牌时给足 520ms 与球同步 */
+  fadeLoops: function (dur) {
+    const now = Date.now();
+    const d = dur || 280;
+    this.loopSt = this.loopAl.map(function (a) {
+      return { from: a, to: 0, t0: now, dur: d };
+    });
+    this.strokeSt = { from: (this.strokeAl == null ? 1 : this.strokeAl), to: 0, t0: now, dur: d };
+    this.loopVisible = false;
+    this.startInk();
+  },
+
+  /* 步骤号：按 k/b 反查，八步与七步自动对齐 */
+  stepIndex: function (k, b) {
+    for (let i = 0; i < this.steps.length; i++) {
+      const s = this.steps[i];
+      if (s.k === k && (b == null || s.b === b)) return i;
+    }
+    return 0;
+  },
+
+  clearInk: function () {
+    this.loopList = [];
+    this.loopAl = [];
+    this.loopSt = [];
+    this.loopVisible = false;
+    this.strokeSt = null;
+    this.strokeAl = 0;
+    this.stroke = [];
+    this.extSeg = [];
+    this.paint();
+  },
+
+  /* =========================================================
+     外壳：步骤轨 / 记录带 / 三变柱
+     ========================================================= */
+  chrome: function (n) {
+    const steps = this.steps;
+    const st = steps[n];
+
+    const rails = steps.map(function (s, i) {
+      return {
+        i: i,
+        n: i + 1,
+        lab: s.lab,
+        cls: i < n ? 'done' : (i === n ? 'cur' : ''),
+        line: i < steps.length - 1,
+        lineCls: i < n ? 'done' : ''
+      };
+    });
+
+    const pillars = [];
+    for (let b = 0; b < 3; b++) {
+      const info = this.pillarInfo[b];
+      const done = !!info;
+      const cnt = done ? (1 + info.r1 + info.r2) : 0;
+      /* 自上而下：挂 1 ｜ 右余 ｜ 左余 */
+      const dots = [];
+      for (let j = 0; j < cnt; j++) {
+        dots.push({ i: j, gap: j === 1 || j === 1 + info.r1 });
+      }
+      pillars.push({
+        lab: BIAN[b],
+        val: done ? cnt : '—',
+        c: done ? '#15171c' : '#c3c7cd',
+        done: done,
+        dots: dots
+      });
+    }
+
+    let meta = YAO[this.yaoIndex] + '爻 · ';
+    if (st.k === 'hang') meta += '起筮';
+    else if (st.k === 'yao') meta += '三变已毕';
+    else meta += '第 ' + (st.b + 1) + ' 变 · 第 ' + (n + 1) + '/' + steps.length + ' 步';
+
+    this.setData({
+      step: n,
+      stepKey: st.k,
+      rails: rails,
+      yaoDots: this.buildRecord(this.yaoIndex),
+      pillars: pillars,
+      metaText: meta,
+      stepName: st.full
+    });
+  },
+
+  buildRecord: function (hi) {
+    const out = [];
+    for (let i = 0; i < 6; i++) {
+      const v = this.values[i];
+      const on = (i === hi);
+      if (!v) {
+        out.push({ k: YAO[i], v: '▢', cls: on ? 'cur' : '', bian: false });
+      } else {
+        const info = dayan.yaoInfo(v);
+        out.push({
+          k: YAO[i],
+          v: CN[v] + ' ' + info.symbol,
+          cls: on ? 'has cur' : 'has',
+          bian: !!info.changing
+        });
+      }
+    }
+    return out;
+  },
+
+  /* =========================================================
+     球池
+     ========================================================= */
+  /* 球径按「覆盖率恒定」换算：49 策与 28 策看着一样密，不会越洗越稀 */
+  ballFor: function (n) {
+    const target = this.dia * Math.sqrt(0.155 / Math.max(1, n));
+    const lo = 24 * this.rpx;
+    const hi = 44 * this.rpx;
+    return Math.max(2, Math.round(Math.min(hi, Math.max(lo, target))));
+  },
+
+  makeSpots: function (n) {
+    let raw = [];
+    for (let t = 0; t < 3; t++) {
+      raw = dayan.layoutEven(n, this.dia, this.sz, this.gap);
+      if (raw.length >= n) break;
+      raw = dayan.layoutInCircle(n, this.dia, this.sz, this.gap, 0);
+      if (raw.length >= n) break;
+    }
+    return raw.slice(0, n).map(function (p) {
+      return { x: p.x + this.sz / 2, y: p.y + this.sz / 2 };
+    }, this);
+  },
+
+  renderBalls: function () {
+    const sz = this.sz;
+    const balls = this.balls.map(function (b) {
+      return {
+        id: b.id,
+        x: Math.round(b.cx - sz / 2),
+        y: Math.round(b.cy - sz / 2),
+        cls: b.cls || '',
+        d: b.d || 0,
+        dl: b.dl || 0,
+        ad: b.ad || 0
+      };
+    });
+    /* 席上现存策数：ghost（原位虚线小圈）与 gone（已彻底离席）都不算球 */
+    let pile = 0;
+    this.balls.forEach(function (b) {
+      const c = b.cls || '';
+      if (c.indexOf('ghost') < 0 && c.indexOf('gone') < 0) pile++;
+    });
+    this.setData({ balls: balls, ballSize: sz, dia: this.dia, pileCount: pile });
+  },
+
+  /* 重新铺球：留到几颗就摆几颗，其余淡出 */
+  relayout: function (count, animate) {
+    this.sz = this.ballFor(count);
+    this.gap = Math.round(this.sz * 0.4);
+    const pts = this.makeSpots(count);
+    /* 已归奇离席的球不再参与，免得下一变又「复活」 */
+    const live = this.balls.filter(function (b) { return b.cls !== 'gone' && b.cls !== 'ghost'; });
+    const keep = live.slice(0, Math.min(live.length, count));
+    const next = [];
+    for (let i = 0; i < count; i++) {
+      const old = keep[i];
+      if (old) {
+        next.push({
+          id: old.id, cx: pts[i].x, cy: pts[i].y, cls: '',
+          d: animate ? 520 : 0, dl: animate ? i * 7 : 0
+        });
+      } else {
+        next.push({
+          /* 非动画重铺（开局）不带入场动画：否则后续任何列表重排都会让整席球
+             把「从无到有」的淡入重播一遍，看起来就是闪无又闪现 */
+          id: 'b' + (this.seq++), cx: pts[i].x, cy: pts[i].y,
+          cls: animate ? 'pop' : '',
+          d: 0, dl: 0, ad: animate ? 300 + i * 6 : 0
+        });
+      }
+    }
+    this.balls = next;
+    this.pts = pts;
+    this.renderBalls();
+  },
+
+  /* =========================================================
+     S1 挂一（五十取一 · 太极）
+     ========================================================= */
+  enterHang: function () {
+    /* 全局仅此一次（首爻起筮）：五十策列席、太极位是虚位，等用户点「下一步」拈出。
+       掐断尚未触发的延时回调并递增爻代次，使任何已排队的旧回调自动失效。 */
+    (this.timers || []).forEach(function (id) { clearTimeout(id); });
+    this.timers = [];
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    this.epoch = (this.epoch || 0) + 1;
+
+    this.steps = buildSteps(true);       // 仅首爻八步（含「起筮 · 挂一」）
+    this.stroke = [];
+    this.sides = [];
+    this.hang = -1;
+    this.changes = [];
+    this.totals = [49, 0, 0];
+    this.nextTotal = 0;
+    this.pillarInfo = [null, null, null];
+    this.clearInk();
+    this.balls = [];
+    this.relayout(50, false);              // 大衍之数五十：太极那一策此刻还在席上
+
+    this.setData({
+      total: 50,
+      taijiOn: false,                     // 太极位是虚位，点「下一步」才由席上飞入
+      leftCount: 0,
+      rightCount: 0,
+      splitDone: false,
+      chips: [],
+      formulaText: '',
+      formulaNote: '',
+      fly: [],
+      btnWait: false,
+      hint: '大衍之数五十，其用四十有九 —— 五十策尽列于席\n点「下一步」：拈出一策，如日初升，缓缓升入上方太极位；此后十八变此策常驻不动、不再回席',
+      btnText: '下 一 步 · 拈 出 太 极'
+    });
+    this.chrome(0);
+
+    /* 幂等兜底：起筮铺 50 策时，若原生渲染器把两次 setData 合并在同一帧，
+       wx:for 的 key 复用可能停在空列表；下一帧再核一次，席上不是 50 策就补铺。
+       正常流程下这里什么也不做，不会引起重绘或闪烁。 */
+    const self = this;
+    const gen = this.epoch;
+    this.later(function () {
+      if ((self.epoch || 0) !== gen) return;
+      if (self.balls.length !== 50 || (self.data.balls || []).length !== 50) {
+        self.relayout(50, false);
+      }
+    }, 30);
+  },
+
+  /* S1 的动作：拈起变黑（看得出是哪一策）→ 如日初升，缓缓升入太极位 → 余 49 策
+     「日出」分四拍：变黑凝住 → 光晕初萌、微微浮起（露头）→ 缓升归位 → 落定光环。
+     每一拍都是一次独立的 setData，彼此间隔 ≥300ms；不靠「两次 setData 的差值」
+     来撑 transition 起点（真机上那两帧常被合并，看起来就是直接闪现）。
+     位移之外的光感由 WXSS keyframes 独立承担，即使某段位移被合并，
+     也仍有完整的由暗转明、光晕铺开的过程可见。
+     落定之后绝不再重绘球堆，避免整席球「闪无又闪现」。 */
+  takeTaiji: function () {
+    if (this.hangAnimating) return;
+    const self = this;
+    /* 挂一总时长 2000ms：改这一组即可整体调速，四段相加须与 WXSS 里
+       sunBody / sunGlow 的 animation 时长（1600ms）对得上。 */
+    const BLACK_MS = 420;      // 拈起变黑、抬起，凝住让人看清取的是哪一策
+    const LIFT_MS = 160;       // 飞球接手：先以 d:0 硬渲染起始帧，日晕开始萌动
+    const HOVER_MS = 260;      // 如日之初升：先垂直浮起 16px，光晕铺开
+    const FLY_MS = 1000;       // 缓缓升空，慢起缓停，飞入上方太极位
+    const SETTLE_MS = 160;     // 落定，光环扩散，实球显形
+    const HOVER_PX = 16;       // 「跃出地平线」的那一下上浮
+    const PICK_SC = 1.26;      // 与 .ball.dark.pick 的放大一致，飞球接手时不缩一下
+    if (!this.balls.length) {             // 极端兜底：没球就直接推进
+      this.taiji = true;
+      this.setData({ taijiOn: true, fly: [] });
+      this.enterSplit(0);
+      return;
+    }
+
+    /* 拈最上一枚：从球堆上沿起飞，飞向左上方太极位，路径最顺 */
+    let pick = 0, bestY = 1e9;
+    for (let i = 0; i < this.pts.length; i++) {
+      if (this.pts[i].y < bestY) { bestY = this.pts[i].y; pick = i; }
+    }
+    const p = this.pts[pick];
+    const sz = this.sz;
+    this.hangAnimating = true;
+
+    this.setData({
+      btnWait: true,
+      btnText: '如 日 初 升 …',
+      hint: '自五十策中拈出一策，如日之初升，虚一不用 —— 此策为太极\n此后十八变常驻不动、不再回席，余四十九策以备分二'
+    });
+
+    /* 1. 拈起：这一枚变黑、微微抬起放大，停一会儿，让人看清取的是哪一颗 */
+    this.balls[pick].cls = 'dark pick';
+    this.balls[pick].d = 260;
+    this.renderBalls();
+
+    /* 2. 离席起飞：起飞前重测一次位置（页面滚过也不跑偏） */
+    this.later(function () {
+      self.measure(function () {
+        const r = self.circleRect, tr = self.taijiRect;
+        self.balls.splice(pick, 1);
+        self.pts.splice(pick, 1);
+        self.renderBalls();                       // 在席之策 50 → 49，其余球一颗不动
+
+        const done = function () {
+          self.taiji = true;
+          self.hangAnimating = false;
+          self.setData({ taijiOn: true, fly: [] });
+          self.enterSplit(0);                    // 此处不再碰球堆
+        };
+        if (!r || !tr) { done(); return; }       // 量不到位置就退化为直接落位
+
+        const x0 = Math.round(r.left + p.x - sz / 2);
+        const y0 = Math.round(r.top + p.y - sz / 2);
+        const tx = Math.round(tr.left + tr.width / 2 - x0 - sz / 2);
+        const ty = Math.round(tr.top + tr.height / 2 - y0 - sz / 2);
+        const sc = Math.round((46 * self.rpx / sz) * 100) / 100;   // 落到 46rpx 的太极球
+
+        /* 2. 飞球接手：先在原位以 d:0 硬渲染一帧（同位置、同大小、同色、同缩放），
+           并挂上 .sun，由 keyframes 独立把日晕从暗养到明。
+           这一帧不带任何位移过渡，即使后续 setData 被合并也不会「瞬移」。 */
+        self.setData({
+          fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                  d: 0, dl: 0, land: false, tx: 0, ty: 0, sc: PICK_SC }]
+        });
+        /* 3. 露头：先垂直微微浮起，像日轮挣出地平线，光晕铺开 */
+        self.later(function () {
+          self.setData({
+            fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                    d: HOVER_MS, dl: 0, land: false, tx: 0, ty: -HOVER_PX,
+                    sc: Math.round(PICK_SC * 1.04 * 100) / 100 }]
+          });
+        }, LIFT_MS);
+        /* 4. 升空：慢起缓停，斜斜升入上方太极位 */
+        self.later(function () {
+          self.setData({
+            fly: [{ id: 'taiji', sun: true, x: x0, y: y0, size: sz,
+                    d: FLY_MS, dl: 0, land: false, tx: tx, ty: ty, sc: sc }]
+          });
+        }, LIFT_MS + HOVER_MS);
+        /* 5. 落定：飞球隐去、太极位实球显形，同尺寸同位置，看不出接缝 */
+        self.later(done, LIFT_MS + HOVER_MS + FLY_MS + SETTLE_MS);
+      });
+    }, BLACK_MS);
+  },
+
+  /* =========================================================
+     S2/S4/S6 分二挂一
+     ========================================================= */
+  enterSplit: function (b) {
+    const total = b === 0 ? 49 : this.changes[b - 1].next;
+    this.totals[b] = total;
+
+    this.sides = [];
+    this.hang = -1;
+    /* b>0：圈与划线正随洗牌一起淡出，别在这里一刀清掉；淡完由 inkTick 收尾 */
+    if (b === 0) {
+      this.stroke = [];
+      this.clearInk();
+    } else {
+      this.strokeSt = this.strokeSt || { from: (this.strokeAl == null ? 1 : this.strokeAl), to: 0, t0: Date.now(), dur: 520 };
+      this.startInk();
+    }
+    if (b > 0) {
+      /* 揲四既毕，余策球「洗牌重分」：错峰散到新的落点 */
+      this.relayout(total, true);
+    } else if (this.balls.length !== total) {
+      /* 每爻首变只在席上策数不对时补铺：首爻挂一动画已把 50 裁成 49；
+         二～上爻成爻清席后是 0，这里直接补铺 49（太极之策不再回席）。
+         避免正常流程重铺导致整席「闪无又闪现」，也不留空席。 */
+      this.relayout(total, false);
+    }
+
+    this.setData({
+      total: total,
+      leftCount: 0,
+      rightCount: 0,
+      splitDone: false,
+      chips: [],
+      formulaText: '',
+      formulaNote: '',
+      btnWait: true,
+      hint: '在球间从上往下画一条线，分成左右两堆\n线须自最上一排的上方起、画到最下一排的下方（上下画反也行），中路不要回折\n画成什么线就留什么线，球一颗都不动；松手后程序自右堆取一挂起',
+      btnText: '请 先 划 线 分 堆'
+    });
+    this.chrome(this.stepIndex('split', b));
+  },
+
+  /* 圆席在屏幕上的位置（飞球用） */
+  measure: function (cb) {
+    const self = this;
+    const q = wx.createSelectorQuery().in(this);
+    q.select('#ballField').boundingClientRect();
+    q.selectAll('.pil-dots').boundingClientRect();
+    q.select('.tj-ball').boundingClientRect();       // 太极位的落点（未拈出时也在，只是缩着）
+    q.exec(function (res) {
+      self.circleRect = res[0] || null;
+      self.pillarRects = res[1] || [];
+      self.taijiRect = res[2] || null;
+      if (cb) cb();
+    });
+  },
+
+  guard: function (e, type) {
+    const t = (e && e.touches && e.touches[0]) || null;
+    const px = t && t.clientX != null ? t.clientX : (t && t.pageX != null ? t.pageX : NaN);
+    const py = t && t.clientY != null ? t.clientY : (t && t.pageY != null ? t.pageY : NaN);
+    const key = type + '|' + ((e && e.timeStamp) || 0) + '|' + px + ',' + py;
+    if (this._lastKey === key) return true;
+    this._lastKey = key;
+    return false;
+  },
+
+  onTouchStart: function (e) {
+    if (this.data.stepKey !== 'split' || this.data.splitDone) return;
+    if (this.guard(e, 'start')) return;
+    const t = e.touches[0];
+    this.rawStroke = [{ x: t.clientX, y: t.clientY }];
+    /* 新的一笔：把上一变残留的圈、线、淡出动画一并清掉，免得抢画笔 */
+    this.stroke = [];
+    this.strokeAl = 1;
+    this.strokeSt = null;
+    this.loopList = [];
+    this.loopAl = [];
+    this.loopSt = [];
+    this.loopVisible = false;
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    this.paint();
+    this.clearWarn();
+    this.measure();
+  },
+
+  /* 标红「归左归右说不清」的那几颗球，1.4 秒后自行褪回 */
+  warnBalls: function (idx) {
+    if (!idx || !idx.length) return;
+    const self = this;
+    this.balls.forEach(function (b, i) {
+      if (idx.indexOf(i) >= 0) { b.cls = 'warn'; b.d = 160; }
+    });
+    this.renderBalls();
+    this.warnOn = true;
+    this.later(function () {
+      if (!self.warnOn) return;
+      self.clearWarn();
+    }, 1400);
+  },
+
+  clearWarn: function () {
+    if (!this.warnOn) return;
+    this.warnOn = false;
+    this.balls.forEach(function (b) { if (b.cls === 'warn') b.cls = ''; });
+    this.renderBalls();
+  },
+
+  onTouchMove: function (e) {
+    if (this.data.stepKey !== 'split' || this.data.splitDone) return;
+    if (this.guard(e, 'move')) return;
+    const t = e.touches[0];
+    const prev = this.rawStroke[this.rawStroke.length - 1];
+    if (!prev) return;
+    const dx = t.clientX - prev.x, dy = t.clientY - prev.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 6) return;
+    this.rawStroke.push({ x: t.clientX, y: t.clientY });
+
+    const r = this.circleRect;
+    if (!r) return;
+    this.stroke = this.rawStroke.map(function (p) {
+      return { x: p.x - r.left, y: p.y - r.top };
+    });
+    this.strokeAl = 1;      // 上一变的圈线可能刚淡过，这里必须重新点亮
+    this.strokeSt = null;
+    this.paint();
+  },
+
+  onTouchEnd: function (e) {
+    if (this.data.stepKey !== 'split' || this.data.splitDone) return;
+    if (this.guard(e, 'end')) return;
+    if (!this.rawStroke || this.rawStroke.length < 2) return;
+
+    if (!this.circleRect) {
+      const self = this;
+      this.measure(function () { self.finishSplit(); });
+      return;
+    }
+    this.finishSplit();
+  },
+
+  finishSplit: function () {
+    const self = this;
+    const r = this.circleRect;
+    let samples = this.rawStroke.map(function (p) {
+      return { x: p.x - r.left, y: p.y - r.top };
+    });
+
+    const boxes = this.pts.map(function (p) {
+      return { x: p.x - self.sz / 2, y: p.y - self.sz / 2 };
+    });
+
+    /* 先验笔势：方向明确、不回折、不横画。不再要求「线必须盖过上下两排球心」——
+       两端会沿切线延长到席外，延长线照样把圆席切开（见 dayan.extendSplit） */
+    const chk = dayan.checkSplit(boxes, samples, this.sz, this.dia, this.dia);
+    if (!chk.ok) {
+      if (chk.code === 'short') {
+        this.setData({ hint: '这一笔太短了，看不出分界\n请从球阵一侧划到另一侧，笔势要成一个方向' });
+      } else if (chk.code === 'flat') {
+        this.setData({ hint: '这一笔太横了\n分堆是按「每个高度上的分界点」判的，横线没有高下之分\n请上下走向地划：从球阵上方划到下方（或反过来）都行，斜着也可以' });
+      } else {
+        this.setData({ hint: '这一笔画回来了\n回折处同一高度会出现左右两个分界，球归哪边说不清\n请一笔画到底，不要往回折' });
+      }
+      wx.showToast({ title: '请重新划线', icon: 'none' });
+      return;
+    }
+
+    const res = dayan.splitByCurve(boxes, samples, this.sz, this.dia, this.dia);
+    if (!res || res.fallback || res.left < 1 || res.right < 2) {
+      wx.showToast({ title: '左右各留二策以上（挂一须从右堆取），请重画', icon: 'none' });
+      return;
+    }
+
+    const total = this.data.total;
+    const ch = dayan.change(total, res.left);
+    if (ch.error || ch.next < 12) {
+      wx.showToast({ title: '分堆无效，请重新划线', icon: 'none' });
+      return;
+    }
+
+    /* 挂一：右堆最上一枚变黑挂起 */
+    let pick = -1, bestY = 1e9;
+    for (let i = 0; i < this.pts.length; i++) {
+      if (res.sides[i] === 2 && this.pts[i].y < bestY) { bestY = this.pts[i].y; pick = i; }
+    }
+    if (pick < 0) {
+      wx.showToast({ title: '右堆为空，请重新划线', icon: 'none' });
+      return;
+    }
+
+    /* 球心正好压在线上的那几颗：判归属只看球心，但要标出来让占者看见 */
+    const edgeList = res.edge || [];
+    const edgeN = edgeList.length;
+    const edgeSet = {};
+    edgeList.forEach(function (i) { edgeSet[i] = 1; });
+
+    this.sides = res.sides.map(function (s) { return s === 1 ? 'L' : 'R'; });
+    this.hang = pick;
+    this.stroke = samples;
+    this.extSeg = res.ext || [];        // 两端延长到席外的那两段，画成细虚线
+    this.strokeAl = 1;
+    this.strokeSt = null;
+    this.paint();
+
+    this.balls.forEach(function (b, i) {
+      b.cls = (i === pick) ? 'dark' : '';
+      if (edgeSet[i]) b.cls += (b.cls ? ' ' : '') + 'edge';
+      b.d = 0;
+      b.dl = 0;
+    });
+    this.renderBalls();
+
+    const b = this.steps[this.data.step].b;
+    const divTip = (ch.r1 === 4 || ch.r2 === 4) ? ' · 整除者以四为余' : '';
+    const edgeTip = edgeN
+      ? '\n有 ' + edgeN + ' 颗球正压在这条线上（朱红虚环）· 归属只看球心：心在线左即左，在线右即右'
+      : '';
+    const extN = (res.ext || []).length;
+    const extTip = extN
+      ? '\n两端细虚线是把这一笔延长到席外的部分 —— 球按延长后的分界归边'
+      : '';
+    this.setData({
+      leftCount: res.left,
+      rightCount: res.right - 1,
+      splitDone: true,
+      btnWait: false,
+      chips: [
+        { t: '左 ' + res.left },
+        { t: '右 ' + (res.right - 1) },
+        { t: '挂 1', dark: true },
+        { t: '合 ' + total, sum: true }
+      ],
+      hint: '此线由你亲手所画，原样保留；球一颗未动' + extTip
+        + '\n右堆最上一枚已变黑挂起（第 ' + (b + 1) + ' 变，共 ' + total + ' 策）' + divTip + edgeTip,
+      btnText: '下 一 步（揲四归奇）'
+    });
+  },
+
+  onRedraw: function () {
+    if (this.data.stepKey !== 'split') return;
+    this.rawStroke = [];
+    this.stroke = [];
+    this.extSeg = [];
+    this.sides = [];
+    this.hang = -1;
+    this.paint();
+    this.balls.forEach(function (b) { b.cls = ''; b.d = 0; b.dl = 0; });
+    this.renderBalls();
+    this.setData({
+      leftCount: 0,
+      rightCount: 0,
+      splitDone: false,
+      chips: [],
+      btnWait: true,
+      hint: '在球间从上往下画一条线，分成左右两堆\n线须自最上一排的上方起、画到最下一排的下方（上下画反也行），中路不要回折\n画成什么线就留什么线，球一颗都不动；松手后程序自右堆取一挂起',
+      btnText: '请 先 划 线 分 堆'
+    });
+  },
+
+  /* =========================================================
+     S3/S5/S7 揲四归奇：不换页、球不动，四策一圈，余策归柱
+     ========================================================= */
+  enterCount: function (b) {
+    const ch = dayan.change(this.totals[b], this.data.leftCount);
+    this.changes[b] = ch;
+    this.nextTotal = ch.next;
+
+    this.setData({
+      btnWait: true,
+      btnText: '揲 四 中 …',
+      chips: [],
+      hint: '球一颗不动：四策一圈（圈不相交、不越线），余策变黑归奇\n'
+        + (ch.r1 === 4 || ch.r2 === 4 ? '此变有整除者，整四策以四为余、照常取出\n' : '')
+        + '归奇 ' + (1 + ch.r1 + ch.r2) + ' 策扐入「' + BIAN[b] + '」柱（自上而下：挂 1 ｜ 右余 ｜ 左余）'
+    });
+
+    /* 1. 就地画圈 */
+    this.showLoops();
+
+    /* 2. 定出离席的余策（含整除记四那四策），与圈里那一撮完全一致。
+       柱内自上而下是「挂 1 ｜ 右余 ｜ 左余」，自下而上码放即：左余 → 右余 → 挂 1 */
+    const remL = [];
+    const remR = [];
+    const groups = loops.groupBalls(this.sides, this.pts, this.hang, this.sz);
+    groups.forEach(function (g) {
+      if (!g.rem) return;
+      const box = (g.side === 'L') ? remL : remR;
+      g.idx.forEach(function (i) { box.push(i); });
+    });
+    const went = remL.concat(remR).concat([this.hang]);
+
+    const self = this;
+    const n = went.length;
+
+    /* 3. 余策变黑 */
+    this.later(function () {
+      self.balls.forEach(function (bl, i) {
+        if (went.indexOf(i) >= 0) { bl.cls = 'dark'; bl.d = 180; }
+      });
+      self.renderBalls();
+    }, 240);
+
+    /* 4. 逐颗飞入对应柱段；起飞前重测一次位置，页面滚过也不会跑偏。
+       黑球被「拎起」的那一瞬，原位立刻收成虚线小圈，画面上不留实球残影 */
+    const takeoff = 600;
+    const flight = 420;
+    const stagger = 32;
+    this.later(function () {
+      self.measure(function () {
+        self.balls.forEach(function (bl, i) {
+          if (went.indexOf(i) >= 0) { bl.cls = 'ghost'; bl.d = 220; }
+        });
+        self.renderBalls();
+        self.flyTo(b, went, self.pillarTarget(b, n, ch.r1, ch.r2));
+      });
+    }, takeoff);
+
+    const landed = takeoff + flight + stagger * Math.max(0, n - 1);
+
+    /* 5. 落定：黑球就地缩成柱内小黑点（自上而下第几格，就落在第几格） */
+    this.later(function () { self.settleFly(); }, landed + 40);
+
+    /* 6. 柱内计数亮起，按钮解禁。此时手绘圈与划线都还在，点「下一步」洗牌时才散 */
+    const arrive = landed + 40 + 220;
+    this.later(function () {
+      self.pillarInfo[b] = { r1: ch.r1, r2: ch.r2 };
+      self.chrome(self.stepIndex('count', b));
+      self.setData({
+        fly: [],
+        btnWait: false,
+        btnText: b < 2 ? '下 一 步（第 ' + (b + 2) + ' 变）' : '下 一 步（成爻）',
+        hint: '归奇 ' + (1 + ch.r1 + ch.r2) + ' 策已入「' + BIAN[b] + '」柱 · 余 ' + ch.next + ' 策'
+          + (b < 2 ? '，洗牌后作第 ' + (b + 2) + ' 变入策' : '以待成爻')
+      });
+    }, arrive);
+
+    /* 7. 算式条 */
+    const divTip = (ch.r1 === 4 || ch.r2 === 4) ? ' · 整除者以四为余' : '';
+    this.setData({
+      formulaText: ch.total + ' － 1(挂) － ' + ch.r1 + '(右余) － ' + ch.r2 + '(左余) ＝ ' + ch.next,
+      formulaNote: '本变归奇 ' + (1 + ch.r1 + ch.r2) + ' 策（挂 1 ｜ 右余 ' + ch.r1 + ' ｜ 左余 ' + ch.r2 + '）' + divTip
+    });
+    this.chrome(this.stepIndex('count', b));
+  },
+
+  /* 柱落点（视口坐标）：柱内自上而下「挂 1 ｜ 右余 ｜ 左余」，
+     第一格圆心即 .pil-dots 的 padding-top 10rpx + .bdot margin 4rpx + 半个球 6rpx = 20rpx */
+  pillarTarget: function (b, count, r1, r2) {
+    const rects = this.pillarRects || [];
+    const r = rects[b];
+    if (!r) return null;
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + Math.round(22 * this.rpx),         // 第 0 格（挂 1）圆心 = 边框 2 + 内边距 10 + 上间距 4 + 半颗 6
+      pitch: Math.round(16 * this.rpx),             // 12rpx 球 + 4rpx 间距
+      extra: Math.round(8 * this.rpx),              // .gap 多出来的 8rpx
+      r1: r1 || 0,
+      r2: r2 || 0
+    };
+  },
+
+  /* 第 slot 格在柱内相对第 0 格下沉多少 */
+  slotDrop: function (slot, target) {
+    return slot * target.pitch
+      + (slot >= 1 ? target.extra : 0)
+      + (slot >= 1 + target.r1 ? target.extra : 0);
+  },
+
+  flyTo: function (b, went, target) {
+    if (!target || !this.circleRect) return;
+    const cr = this.circleRect;
+    const sz = this.sz;
+    const r1 = target.r1, r2 = target.r2;
+    const fly = [];
+    let n = 0;
+    for (let k = 0; k < went.length; k++) {
+      const i = went[k];
+      const p = this.pts[i];
+      if (!p) continue;
+      /* went 自下而上码：前 r2 颗是左余，接着 r1 颗是右余，最后一颗是挂 1 */
+      let slot;
+      if (k >= r1 + r2) slot = 0;
+      else if (k >= r2) slot = 1 + (k - r2);
+      else slot = 1 + r1 + k;
+      fly.push({
+        id: 'f' + b + '_' + i,
+        x: Math.round(cr.left + p.x - sz / 2),
+        y: Math.round(cr.top + p.y - sz / 2),
+        size: sz,
+        tx: 0,
+        ty: 0,
+        sc: 1,
+        d: 420,
+        dl: n * 32,
+        ty2: Math.round(target.y - (cr.top + p.y) + this.slotDrop(slot, target))
+      });
+      n++;
+    }
+    this.setData({ fly: fly });
+    const self = this;
+    this.later(function () {
+      self.setData({
+        fly: fly.map(function (f) {
+          return {
+            id: f.id, x: f.x, y: f.y, size: f.size, d: f.d, dl: f.dl, sc: 1,
+            tx: Math.round(target.x - f.x - f.size / 2),
+            ty: f.ty2
+          };
+        })
+      });
+    }, 30);
+  },
+
+  /* 落定：黑球就地缩成柱内那颗实心小黑点，无缝衔接 */
+  settleFly: function () {
+    const fly = this.data.fly || [];
+    if (!fly.length) return;
+    const dot = 12 * this.rpx;
+    const sc = Math.max(0.28, Math.min(1, dot / this.sz));
+    this.setData({
+      fly: fly.map(function (f) {
+        return {
+          id: f.id, x: f.x, y: f.y, size: f.size, tx: f.tx, ty: f.ty,
+          sc: Math.round(sc * 100) / 100, d: 200, dl: 0, land: true
+        };
+      })
+    });
+  },
+
+  /* =========================================================
+     S8 成爻
+     ========================================================= */
+  enterYao: function () {
+    const remain = this.changes[2].next;
+    const value = dayan.yaoValue(remain);
+    if (!value) {
+      wx.showToast({ title: '演算异常，请重新起卦', icon: 'none' });
+      return;
+    }
+    if (this.values.length === this.yaoIndex) this.values.push(value);
+    const info = dayan.yaoInfo(value);
+
+    this.clearInk();
+    this.balls = [];
+    this.renderBalls();
+
+    this.setData({
+      yaoRemain: remain,
+      yaoNum: CN[value],
+      yaoName: info.name,
+      yaoYang: info.yang,
+      fly: [],
+      btnWait: false,
+      hint: info.name + ' · ' + (info.changing ? '可变之爻，爻旁记「变」' : '不变之爻')
+        + '\n' + remain + ' ÷ 4 ＝ ' + value + '，已记入六爻带的「' + YAO[this.yaoIndex] + '」位',
+      btnText: this.yaoIndex === 5 ? '查 看 卦 象' : '演 下 一 爻'
+    });
+    this.chrome(this.steps.length - 1);
+  },
+
+  /* 二～上爻开场：太极之策自首爻拈出后永久离席、十八变常驻不动，
+     因此不再重演「起筮 · 挂一」——七步轨、席上直接重铺 49 策，
+     第一步就是「1变 · 分二挂一」。成爻页已清空球堆，这里负责补回。 */
+  enterNextYao: function () {
+    /* 与 enterHang 同样的跨爻防线：掐断上一爻遗留的归奇/洗牌/标红回调 */
+    (this.timers || []).forEach(function (id) { clearTimeout(id); });
+    this.timers = [];
+    if (this.inkTimer) { clearInterval(this.inkTimer); this.inkTimer = null; }
+    this.epoch = (this.epoch || 0) + 1;
+
+    this.steps = buildSteps(false);      // 七步：无「起筮 · 挂一」
+    this.changes = [];
+    this.totals = [49, 0, 0];
+    this.nextTotal = 0;
+    this.pillarInfo = [null, null, null];
+    this.clearInk();
+    this.balls = [];
+    this.renderBalls();
+
+    this.setData({
+      taijiOn: true,                    // 太极之策不回虚位、不重播日出动画
+      fly: [],
+      btnWait: false
+    });
+    this.enterSplit(0);                 // 补铺 49 策、七步轨、按钮与提示
+
+    this.setData({
+      hint: '太极之策已定，十八变不再回席 —— 本爻自 49 策起，直接分二\n'
+        + '在球间从上往下画一条线，分成左右两堆；松手后程序自右堆取一挂起'
+    });
+
+    /* 幂等兜底：同一帧里「成爻清空 → 新爻铺满」两次 setData 被合并时，
+       wx:for 可能停在空列表；下一帧核一次，非 49 策就补铺。 */
+    const self = this;
+    const gen = this.epoch;
+    this.later(function () {
+      if ((self.epoch || 0) !== gen) return;
+      if (self.balls.length !== 49 || (self.data.balls || []).length !== 49) {
+        self.relayout(49, false);
+      }
+    }, 30);
+  },
+
+  /* =========================================================
+     推进
+     ========================================================= */
+  onNext: function () {
+    const st = this.steps[this.data.step];
+
+    if (st.k === 'hang') {
+      this.takeTaiji();                    // 太极既立在动画收尾处置 true
+      return;
+    }
+
+    if (st.k === 'split') {
+      if (!this.data.splitDone) {
+        wx.showToast({ title: '请先在球堆上画线分堆', icon: 'none' });
+        return;
+      }
+      if (this.data.btnWait) return;
+      this.enterCount(st.b);
+      return;
+    }
+
+    if (st.k === 'count') {
+      if (this.data.btnWait) return;
+      if (this.changes[st.b].next < 12) {
+        wx.showToast({ title: '演算异常，请重新起卦', icon: 'none' });
+        return;
+      }
+      /* 圈与划线留着不动，等下一变洗牌时才散（520ms 与球的位移同步） */
+      this.fadeLoops(520);
+      if (st.b < 2) this.enterSplit(st.b + 1);
+      else this.enterYao();
+      return;
+    }
+
+    /* 成爻之后 */
+    if (this.yaoIndex >= 5) {
+      const session = dayan.buildSession(this.values);
+      session.id = 's' + Date.now() + Math.floor(Math.random() * 1000);
+      session.createdAt = Date.now();
+      getApp().globalData.pendingSession = session;
+      wx.redirectTo({ url: '/pages/result/result' });
+      return;
+    }
+    /* 太极之策自首爻拈出后永久离席：二～上爻不再重演「起筮 · 挂一」，
+       太极位保持实球，席上直接重铺 49 策、七步轨从「1变 · 分二挂一」起。 */
+    this.yaoIndex += 1;
+    this.hangAnimating = false;
+    this.enterNextYao();
+  }
+});
+
+});
+__def('pages/result/result.js', function(module, exports, require){
+__cur = "pages/result/result";
+const duanzhan = require('../../utils/duanzhan.js');
+const store = require('../../utils/store.js');
+
+// 成卦结果页：断占总结（三行） / 本卦 / 变卦
+// 全部展示数据由 utils/duanzhan.js 从六爻营数重算，历史占例无需迁移
+Page({
+  data: {
+    ready: false,
+    fromHistory: false,
+    saved: false,
+    summaryLines: [],
+    ben: null,
+    bian: null,
+    timeText: '',
+    question: '',
+    asking: false,
+    questionInput: ''
+  },
+
+  onLoad: function (options) {
+    let session = null;
+    if (options && options.id) {
+      session = store.get(options.id);
+      this.setData({ fromHistory: true, saved: true });
+    } else {
+      session = getApp().globalData.pendingSession;
+    }
+
+    if (!session) {
+      wx.showToast({ title: '占例不存在', icon: 'none' });
+      setTimeout(function () {
+        wx.reLaunch({ url: '/pages/index/index' });
+      }, 800);
+      return;
+    }
+
+    this.session = session;
+    this.render(session);
+  },
+
+  render: function (session) {
+    const values = session.values || [];
+    const result = duanzhan.buildResult(values);
+    this.setData({
+      ready: true,
+      summaryLines: result.summaryLines,
+      ben: result.ben,
+      bian: result.bian,
+      timeText: store.formatTime(session.createdAt),
+      question: (session.question || '').trim()
+    });
+  },
+
+  // 保存前先问所占事项；用页面内弹层而不是 wx.showModal(editable)，
+  // 因为 Android WebView 默认不显示 prompt/confirm 类原生对话框。
+  onSave: function () {
+    if (!this.session || this.data.saved) return;
+    this.setData({
+      asking: true,
+      questionInput: (this.session.question || '').trim()
+    });
+  },
+
+  onQuestionInput: function (e) {
+    this.setData({ questionInput: (e.detail && e.detail.value) || '' });
+  },
+
+  onCancelAsk: function () {
+    this.setData({ asking: false });
+  },
+
+  noop: function () {},
+
+  onConfirmAsk: function () {
+    if (!this.session) return;
+    const q = (this.data.questionInput || '').trim();
+    this.session.question = q;
+    const res = store.save(this.session);
+    if (res.error) {
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      return;
+    }
+    this.setData({ asking: false, saved: true, question: q });
+    wx.showToast({ title: '已存入占例', icon: 'success' });
+  },
+
+  onRestart: function () {
+    wx.reLaunch({ url: '/pages/index/index' });
+  },
+
+  onHistory: function () {
+    wx.navigateTo({ url: '/pages/history/history' });
+  }
+});
+
+});
+__def('pages/history/history.js', function(module, exports, require){
+__cur = "pages/history/history";
+const store = require('../../utils/store.js');
+
+Page({
+  data: {
+    list: [],
+    empty: true
+  },
+
+  onShow: function () {
+    this.loadList();
+  },
+
+  loadList: function () {
+    const all = store.list();
+    const list = all.map(function (item) {
+      const hex = item.hex || {};
+      const changed = item.changed;
+      return {
+        id: item.id,
+        name: hex.name || '未知卦',
+        shortName: hex.shortName || '',
+        changedName: changed ? changed.name : '',
+        changeText: (item.changeLabels || []).join('、'),
+        question: (item.question || '').trim(),
+        timeText: store.formatTime(item.createdAt)
+      };
+    });
+    this.setData({ list: list, empty: list.length === 0 });
+  },
+
+  onOpen: function (e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: '/pages/result/result?id=' + id });
+  },
+
+  onDelete: function (e) {
+    const id = e.currentTarget.dataset.id;
+    const that = this;
+    wx.showModal({
+      title: '删除占例',
+      content: '删除后不可恢复，确定删除？',
+      confirmColor: '#e0402f',
+      success: function (res) {
+        if (!res.confirm) return;
+        store.remove(id);
+        that.loadList();
+        wx.showToast({ title: '已删除', icon: 'none' });
+      }
+    });
+  },
+
+  onBack: function () {
+    wx.reLaunch({ url: '/pages/index/index' });
+  }
+});
+
+});
+__req('app.js');
+__req('pages/index/index.js');
+__req('pages/divine/divine.js');
+__req('pages/result/result.js');
+__req('pages/history/history.js');
+__boot();
+var H = __req('utils/hexagrams.js');
+var CASES = [["0 爻变",[7,8,7,8,8,8]],["1 爻变·相值",[6,8,7,7,7,8]],["1 爻变·不相值",[8,7,9,7,7,8]],["2 爻变·相值",[8,8,8,9,9,8]],["2 爻变·不相值",[9,8,7,9,8,7]],["3 爻变·相值",[6,8,9,9,7,7]],["3 爻变·贞悔相争",[9,9,9,8,7,8]],["4 爻变·相值",[6,6,6,6,7,8]],["4 爻变·之卦主断",[6,9,9,8,9,7]],["5 爻变·相值",[6,6,6,6,6,8]],["5 爻变·不相值",[9,8,9,9,9,9]],["6 爻全变",[9,6,9,6,9,6]],["乾·用九",[9,9,9,9,9,9]],["坤·用六",[6,6,6,6,6,6]]];
+function makeSession(values){
+  var h = H.buildHexagram(values);
+  var chg = values.filter(function(v){return v===6||v===9;}).length;
+  var changed = null;
+  if (chg > 0) { var c = H.buildHexagram(H.changedValues(values)); changed = {name:c.name}; }
+  return { id:'preview_'+Date.now()+'_'+Math.floor(Math.random()*100000), values:values,
+           createdAt:Date.now(), hex:{name:h.name,shortName:h.shortName||h.name},
+           changed:changed, changeLabels:[] };
+}
+function markActive(i){
+  var bs=document.getElementById('scenes').children;
+  for(var k=0;k<bs.length;k++) bs[k].className=(k===i?'on':'');
+}
+function render(i){
+  getApp().globalData.pendingSession = makeSession(CASES[i][1]);
+  __router.reLaunch('pages/result/result');
+  document.getElementById('phone').scrollTop=0;
+  markActive(i);
+}
+function renderHistory(){
+  __router.reLaunch('pages/history/history');
+  document.getElementById('phone').scrollTop=0;
+  markActive(-1);
+}
+function clearData(){
+  try { localStorage.removeItem('dayan_sessions_v1'); } catch(e) {}
+  wx.showToast({title:'演示数据已清空'});
+  renderHistory();
+}
+var box=document.getElementById('scenes');
+CASES.forEach(function(c,i){var b=document.createElement('button');b.textContent=c[0];b.onclick=function(){render(i);};box.appendChild(b);});
+document.getElementById('btnHistory').onclick=renderHistory;
+document.getElementById('btnClear').onclick=clearData;
+render(3);
+</script>
+</body>
+</html>

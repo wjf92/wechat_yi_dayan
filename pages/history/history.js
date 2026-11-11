@@ -21,6 +21,7 @@ Page({
         shortName: hex.shortName || '',
         changedName: changed ? changed.name : '',
         changeText: (item.changeLabels || []).join('、'),
+        question: (item.question || '').trim(),
         timeText: store.formatTime(item.createdAt)
       };
     });
